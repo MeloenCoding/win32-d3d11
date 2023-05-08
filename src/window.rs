@@ -3,7 +3,7 @@ use windows::{
     core::{PCSTR, PSTR},
     s,
     Win32::{
-        Foundation::{GetLastError, BOOL, HINSTANCE, HWND, LPARAM, LRESULT, POINTS, WPARAM},
+        Foundation::{GetLastError, BOOL, HMODULE, HWND, LPARAM, LRESULT, POINTS, WPARAM},
         Graphics::Gdi::HBRUSH,
         System::{
             Diagnostics::Debug::{
@@ -69,7 +69,7 @@ pub mod io {
 
 /// The Window class which holds every recieved windowEvent and the window data.
 pub struct Window<'a> {
-    pub instance: HINSTANCE,
+    pub instance: HMODULE,
     pub class_name: PCSTR,
     pub atom: u16,
     pub width: i16,
@@ -122,7 +122,7 @@ impl Window<'_> {
             operating system uses this value to identify the executable or EXE
             when it's loaded in memory.
         */
-        let instance: HINSTANCE = unsafe {
+        let instance: HMODULE = unsafe {
             GetModuleHandleA(None).unwrap_or_else(|_| {
                 error::WindowError::new(
                     "Unable to create an hInstance with GetModuleHandle.",

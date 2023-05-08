@@ -4,15 +4,15 @@ use windows::Win32::UI::{Input::KeyboardAndMouse::VK_RETURN, WindowsAndMessaging
 
 use crate::window::Window;
 
-pub struct ExampleApp<'a> {
+pub struct App<'a> {
     pub window: Window<'a>,
     input_buffer: String,
     time_buffer: SystemTime,
 }
 
-impl ExampleApp<'_> {
-    pub fn create() -> ExampleApp<'static> {
-        let app = ExampleApp {
+impl App<'_> {
+    pub fn create() -> App<'static> {
+        let app = App {
             window: Window::new("Example App", CS_OWNDC, 1000, 750),
             input_buffer: String::new(),
             time_buffer: SystemTime::now(),

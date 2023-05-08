@@ -1,11 +1,12 @@
-use example_app::ExampleApp;
+use app::App;
 
-mod example_app;
+mod app;
+mod graphics;
 mod window;
 
 fn main() {
     // create an app
-    let mut app: ExampleApp = example_app::ExampleApp::create();
+    let mut app: App = app::App::create();
 
     // launch the app
     app.launch();
