@@ -1,11 +1,8 @@
-# win32-example
+# win32-d3d11
 A boilerplate project for the win32 crate. Fully documented with good references and usefull links.
 
 ## Usefull documentation i've used
-- https://youtube.com/playlist?list=PLqCJpWy5Fohd3S7ICFXwUomYW0Wv67pDD (*)
-  - Used it to see what steps to take and how basic win32 principles work
-- https://wiki.winehq.org/List_Of_Windows_Messages 
-  - A list of all the window messages
+- See for the win32 side of this project with explanations and usefull links: https://github.com/MeloenCoding/win32-example
 
 ## Why
 
