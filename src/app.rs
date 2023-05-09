@@ -49,6 +49,8 @@ impl App<'_> {
         unsafe {
             windows::Win32::UI::WindowsAndMessaging::SetWindowTextA(self.window.hwnd, elapsed_time)
         };
+        
+        std::thread::sleep(std::time::Duration::from_micros(100));
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {

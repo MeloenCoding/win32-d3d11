@@ -1,4 +1,4 @@
-use crate::loc;
+use crate::{loc, graphics::Graphics};
 use windows::{
     core::{PCSTR, PSTR},
     s,
@@ -38,6 +38,8 @@ pub mod mouse;
     I know public variables are bad but i haven't seen a solution to use variables in [`self::wndproc()`].
 */
 pub mod io {
+    use crate::graphics::Graphics;
+
     use super::keyboard::Keyboard;
     use super::mouse::Mouse;
 
@@ -61,6 +63,8 @@ pub mod io {
         auto_repeat_enabled: false,
     };
 
+    // pub static mut GRAPHICS: Graphics = Graphics::setup();
+
     /// Width of the window
     pub static mut MAX_MOUSE_X: i16 = 0;
     /// Height of the window
@@ -80,6 +84,7 @@ pub struct Window<'a> {
     pub last_result: BOOL,
     pub keyboard: &'a mut Keyboard,
     pub mouse: &'a mut Mouse,
+    pub graphics: Graphics
 }
 
 /// Create a message box
@@ -221,6 +226,7 @@ impl Window<'_> {
             mouse: unsafe { &mut io::MOUSE },
             width: window_width,
             height: window_height,
+            graphics: Graphics::setup(hwnd)
         }
     }
 

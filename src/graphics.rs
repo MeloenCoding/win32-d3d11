@@ -20,7 +20,7 @@ use windows::{
 };
 pub struct Graphics {
     pub device: *mut Option<ID3D11Device>,
-    pub swap: *mut Option<IDXGISwapChain>,
+    pub swap: IDXGISwapChain,
     pub context: *mut Option<ID3D11DeviceContext>,
 }
 
@@ -51,8 +51,8 @@ impl Graphics {
             Flags: 0,
         };
 
-        let graphics: Graphics = Graphics {
-            swap: &mut None,
+        let mut graphics: Graphics = Graphics {
+            swap: std::ptr::null() as *const IDXGISwapChain,
             device: &mut None,
             context: &mut None,
         };
@@ -66,12 +66,17 @@ impl Graphics {
                 None,
                 D3D11_SDK_VERSION,
                 Some(swap_desc),
-                Some(graphics.swap),
+                Some(&mut graphics.swap as *mut Option<IDXGISwapChain>),
                 Some(graphics.device),
                 None,
                 Some(graphics.context),
             )
         };
+
         return graphics;
+    }
+
+    pub fn end_frame(&mut self) {
+        let test = unsafe { self.swap.unwrap().Present(1u32, 0u32) };
     }
 }
