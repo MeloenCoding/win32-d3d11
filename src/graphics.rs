@@ -1,5 +1,3 @@
-use std::ptr::null;
-
 use windows::{
     self,
     Win32::Graphics::{
@@ -18,14 +16,14 @@ use windows::{
         },
     },
 };
-pub struct Graphics {
-    pub device: *mut Option<ID3D11Device>,
-    pub swap: IDXGISwapChain,
-    pub context: *mut Option<ID3D11DeviceContext>,
+pub struct Graphics<'a> {
+    pub device: &'a *mut Option<ID3D11Device>,
+    pub swap: &'a *mut Option<IDXGISwapChain>,
+    pub context: &'a *mut Option<ID3D11DeviceContext>,
 }
 
-impl Graphics {
-    pub fn setup(hwnd: windows::Win32::Foundation::HWND) -> Graphics {
+impl Graphics<'_> {
+    pub fn setup(hwnd: windows::Win32::Foundation::HWND) -> Graphics<'static> {
         // https://learn.microsoft.com/en-us/previous-versions/windows/desktop/legacy/bb173064(v=vs.85)
         let swap_desc: *const DXGI_SWAP_CHAIN_DESC = &DXGI_SWAP_CHAIN_DESC {
             BufferDesc: DXGI_MODE_DESC {
@@ -51,13 +49,13 @@ impl Graphics {
             Flags: 0,
         };
 
-        let mut graphics: Graphics = Graphics {
-            swap: std::ptr::null() as *const IDXGISwapChain,
-            device: &mut None,
-            context: &mut None,
+        let graphics: Graphics = Graphics {
+            swap: &(std::ptr::null_mut() as *mut Option<IDXGISwapChain>),
+            device: &(std::ptr::null_mut() as *mut Option<ID3D11Device>),
+            context: &(std::ptr::null_mut() as *mut Option<ID3D11DeviceContext>),
         };
 
-        let result: Result<(), windows::core::Error> = unsafe {
+        let _result: Result<(), windows::core::Error> = unsafe {
             D3D11CreateDeviceAndSwapChain(
                 None,
                 D3D_DRIVER_TYPE_HARDWARE,
@@ -66,10 +64,10 @@ impl Graphics {
                 None,
                 D3D11_SDK_VERSION,
                 Some(swap_desc),
-                Some(&mut graphics.swap as *mut Option<IDXGISwapChain>),
-                Some(graphics.device),
+                Some(*graphics.swap),
+                Some(*graphics.device),
                 None,
-                Some(graphics.context),
+                Some(*graphics.context),
             )
         };
 
@@ -77,6 +75,8 @@ impl Graphics {
     }
 
     pub fn end_frame(&mut self) {
-        let test = unsafe { self.swap.unwrap().Present(1u32, 0u32) };
+        unsafe {
+            println!("{:?}", self.swap);
+        }
     }
 }

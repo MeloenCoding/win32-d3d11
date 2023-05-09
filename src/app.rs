@@ -29,6 +29,7 @@ impl App<'_> {
                 break;
             }
             self.render_frame();
+
         }
         return exit_code.unwrap();
     }
@@ -40,7 +41,7 @@ impl App<'_> {
 
         let elapsed_time: windows::core::PCSTR = windows::core::PCSTR::from_raw(
             format!(
-                "{},{}s",
+                "{},{}s\0",
                 time_alive.as_secs(),
                 time_alive.as_millis() % 1000
             )
@@ -61,5 +62,7 @@ impl App<'_> {
             println!("{:?}", self.input_buffer);
             self.input_buffer = "".to_string();
         }
+
+        self.window.graphics.end_frame();
     }
 }

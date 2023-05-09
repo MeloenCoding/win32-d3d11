@@ -84,7 +84,7 @@ pub struct Window<'a> {
     pub last_result: BOOL,
     pub keyboard: &'a mut Keyboard,
     pub mouse: &'a mut Mouse,
-    pub graphics: Graphics
+    pub graphics: &'a mut Graphics<'a>
 }
 
 /// Create a message box
@@ -226,7 +226,7 @@ impl Window<'_> {
             mouse: unsafe { &mut io::MOUSE },
             width: window_width,
             height: window_height,
-            graphics: Graphics::setup(hwnd)
+            graphics: &mut Graphics::setup(hwnd)
         }
     }
 
@@ -270,11 +270,9 @@ impl Window<'_> {
                     io::KEYBOARD.reset();
                 }
                 WM_CLOSE => {
-                    println!("WM_CLOSE");
                     DestroyWindow(hwnd);
                 }
                 WM_DESTROY => {
-                    println!("WM_DESTROY");
                     PostQuitMessage(0);
                 }
 
@@ -347,8 +345,6 @@ impl Window<'_> {
                     let points: POINTS = make_points(lparam);
                     let delta: i16 = get_wheel_delta_wparam(wparam);
                     io::MOUSE.on_wheel_delta(points.x, points.y, delta);
-                    println!("{}", io::MOUSE.event_queue.len());
-                    println!("{:?}\n", io::MOUSE.event_queue);
                 }
 
                 _ => {
