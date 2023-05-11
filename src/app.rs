@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use windows::Win32::UI::{Input::KeyboardAndMouse::VK_RETURN, WindowsAndMessaging::CS_OWNDC};
 
-use crate::window::Window;
+use crate::{window::Window, graphics::{Graphics, DXGrapics}};
 
 pub struct App<'a> {
     pub window: Window<'a>,
@@ -35,23 +35,23 @@ impl App<'_> {
     }
 
     pub fn render_frame(&mut self) {
-        // A test to check if the window updates even if there are no events:
-        let time_alive: std::time::Duration =
-            SystemTime::now().duration_since(self.time_buffer).unwrap();
+        // // A test to check if the window updates even if there are no events:
+        // let time_alive: std::time::Duration =
+        //     SystemTime::now().duration_since(self.time_buffer).unwrap();
 
-        let elapsed_time: windows::core::PCSTR = windows::core::PCSTR::from_raw(
-            format!(
-                "{},{}s\0",
-                time_alive.as_secs(),
-                time_alive.as_millis() % 1000
-            )
-            .as_ptr(),
-        );
-        unsafe {
-            windows::Win32::UI::WindowsAndMessaging::SetWindowTextA(self.window.hwnd, elapsed_time)
-        };
+        // let elapsed_time: windows::core::PCSTR = windows::core::PCSTR::from_raw(
+        //     format!(
+        //         "{},{}s\0",
+        //         time_alive.as_secs(),
+        //         time_alive.as_millis() % 1000
+        //     )
+        //     .as_ptr(),
+        // );
+        // unsafe {
+        //     windows::Win32::UI::WindowsAndMessaging::SetWindowTextA(self.window.hwnd, elapsed_time)
+        // };
         
-        std::thread::sleep(std::time::Duration::from_micros(100));
+        // std::thread::sleep(std::time::Duration::from_micros(100));
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {
@@ -64,5 +64,6 @@ impl App<'_> {
         }
 
         self.window.graphics.end_frame();
+
     }
 }

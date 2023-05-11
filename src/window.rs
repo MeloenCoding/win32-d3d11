@@ -1,4 +1,4 @@
-use crate::{loc, graphics::Graphics};
+use crate::{loc, graphics::{Graphics, DXGrapics, self}};
 use windows::{
     core::{PCSTR, PSTR},
     s,
@@ -20,7 +20,7 @@ use windows::{
                 PM_REMOVE, WM_CHAR, WM_CLOSE, WM_DESTROY, WM_KEYDOWN, WM_KEYUP, WM_KILLFOCUS,
                 WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE,
                 WM_MOUSEWHEEL, WM_QUIT, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
-                WNDCLASSEXA, WNDCLASS_STYLES, WS_CAPTION, WS_MINIMIZEBOX, WS_SYSMENU,
+                WNDCLASSEXA, WNDCLASS_STYLES, WS_CAPTION, WS_MINIMIZEBOX, WS_SYSMENU, GetWindowLongPtrA, GWLP_USERDATA,
             },
         },
     },
@@ -38,8 +38,6 @@ pub mod mouse;
     I know public variables are bad but i haven't seen a solution to use variables in [`self::wndproc()`].
 */
 pub mod io {
-    use crate::graphics::Graphics;
-
     use super::keyboard::Keyboard;
     use super::mouse::Mouse;
 
@@ -84,7 +82,7 @@ pub struct Window<'a> {
     pub last_result: BOOL,
     pub keyboard: &'a mut Keyboard,
     pub mouse: &'a mut Mouse,
-    pub graphics: &'a mut Graphics<'a>
+    pub graphics: Graphics
 }
 
 /// Create a message box
@@ -119,7 +117,8 @@ impl Window<'_> {
         window_width: i16,
         window_height: i16,
     ) -> Window<'static> {
-        let base_details: String = window_name.to_string();
+        let mut base_details: String = window_name.to_string();
+        base_details.push('\0');
         let class_name: PCSTR = PCSTR::from_raw(base_details.as_ptr());
 
         /*
@@ -226,7 +225,7 @@ impl Window<'_> {
             mouse: unsafe { &mut io::MOUSE },
             width: window_width,
             height: window_height,
-            graphics: &mut Graphics::setup(hwnd)
+            graphics: Graphics::setup(hwnd)
         }
     }
 
