@@ -50,7 +50,7 @@ impl App<'_> {
 
     pub fn render_frame(&mut self) {
         // Test
-        self.window.graphics.clear_buffer(0,0, 100,0);
+        self.window.graphics.clear_buffer([0.0, 0.0, 127.0, 0.0]);
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {

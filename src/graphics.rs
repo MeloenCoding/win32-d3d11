@@ -41,10 +41,8 @@ impl Graphics {
         let _ = unsafe { self.resources.as_ref().unwrap().swap_chain.Present(1, 0) };
     }
 
-    pub fn clear_buffer(&self, red: i8, green: i8, blue: i8, alpha: i8) {
-        
-        let rgb: f32 = Self::rgba_to_f32(red, green, blue, alpha);
-        unsafe { self.resources.as_ref().unwrap().context.ClearRenderTargetView(&self.resources.as_ref().unwrap().target, &rgb) }
+    pub fn clear_buffer(&self, rgba: [f32; 4]) {
+        unsafe { self.resources.as_ref().unwrap().context.ClearRenderTargetView(&self.resources.as_ref().unwrap().target, &rgba[0]) };
     }
 
     fn bind_to_window(&mut self, hwnd: &windows::Win32::Foundation::HWND) {
