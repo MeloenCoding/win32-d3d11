@@ -49,6 +49,9 @@ impl App<'_> {
     }
 
     pub fn render_frame(&mut self) {
+        // Test
+        self.window.graphics.clear_buffer(0,0, 100,0);
+
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {
             self.input_buffer.push(ch);
@@ -59,7 +62,10 @@ impl App<'_> {
             self.input_buffer = "".to_string();
         }
 
+        // Draw screen
         self.window.graphics.end_frame();
+
+        // Debug
         self.calc_fps();
     }
 

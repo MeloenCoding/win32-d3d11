@@ -3,7 +3,7 @@ use windows::{
     Win32::{Graphics::{
         Direct3D::D3D_DRIVER_TYPE_HARDWARE,
         Direct3D11::{
-            ID3D11Device, D3D11_SDK_VERSION, D3D11CreateDevice,
+            ID3D11Device, D3D11_SDK_VERSION, D3D11CreateDevice, ID3D11DeviceContext, ID3D11RenderTargetView, ID3D11Resource,
         },
         Dxgi::{
             Common::{
@@ -23,6 +23,8 @@ pub struct Graphics {
 
 struct Resources {
     pub swap_chain: IDXGISwapChain1,
+    pub context: ID3D11DeviceContext,
+    pub target: ID3D11RenderTargetView
 }
 
 impl Graphics {
@@ -36,7 +38,13 @@ impl Graphics {
     }
 
     pub fn end_frame(&self) {
-        let _ = unsafe { self.resources.as_ref().unwrap().swap_chain.Present(0, 0) };
+        let _ = unsafe { self.resources.as_ref().unwrap().swap_chain.Present(1, 0) };
+    }
+
+    pub fn clear_buffer(&self, red: i8, green: i8, blue: i8, alpha: i8) {
+        
+        let rgb: f32 = Self::rgba_to_f32(red, green, blue, alpha);
+        unsafe { self.resources.as_ref().unwrap().context.ClearRenderTargetView(&self.resources.as_ref().unwrap().target, &rgb) }
     }
 
     fn bind_to_window(&mut self, hwnd: &windows::Win32::Foundation::HWND) {
@@ -64,7 +72,16 @@ impl Graphics {
             ).unwrap()
         };
 
-        self.resources = Some(Resources {swap_chain});
+        let context = unsafe { self.device.GetImmediateContext() }.unwrap();
+        let back_buffer: ID3D11Resource = unsafe { swap_chain.GetBuffer(0).unwrap() };
+        let mut target: Option<ID3D11RenderTargetView> = None;
+        unsafe { self.device.CreateRenderTargetView(&back_buffer, None,Some(&mut target)).unwrap() };
+
+        self.resources = Some(Resources {
+            swap_chain,
+            context,
+            target: target.unwrap()
+        });
     }
 
     fn create_device() -> (IDXGIFactory4, ID3D11Device) {
