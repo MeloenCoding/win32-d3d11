@@ -3,28 +3,17 @@ use windows::{
     Win32::{Graphics::{
         Direct3D::D3D_DRIVER_TYPE_HARDWARE,
         Direct3D11::{
-            D3D11CreateDeviceAndSwapChain, ID3D11Device, ID3D11DeviceContext, D3D11_SDK_VERSION, D3D11CreateDevice,
+            ID3D11Device, D3D11_SDK_VERSION, D3D11CreateDevice,
         },
         Dxgi::{
             Common::{
-                DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_MODE_DESC,
-                DXGI_MODE_SCALING_UNSPECIFIED, DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED, DXGI_RATIONAL,
                 DXGI_SAMPLE_DESC, DXGI_FORMAT_R8G8B8A8_UNORM,
-            },
-            IDXGISwapChain, DXGI_SWAP_CHAIN_DESC, DXGI_SWAP_EFFECT_DISCARD,
-            DXGI_USAGE_RENDER_TARGET_OUTPUT, CreateDXGIFactory, IDXGIDevice, IDXGIFactory2, CreateDXGIFactory2, DXGI_SWAP_CHAIN_DESC1, IDXGISwapChain1, IDXGIFactory, IDXGIFactory4, IDXGISwapChain3,
+            }, DXGI_SWAP_EFFECT_DISCARD,
+            DXGI_USAGE_RENDER_TARGET_OUTPUT, CreateDXGIFactory2, DXGI_SWAP_CHAIN_DESC1, IDXGISwapChain1, IDXGIFactory4,
         },
-    }, Foundation::WPARAM, UI::WindowsAndMessaging::WM_PAINT}, core::ComInterface,
+    }},
 };
 
-pub trait DXGrapics {
-    fn setup(hwnd: windows::Win32::Foundation::HWND) -> Self
-        where Self: Sized;
-
-    fn end_frame(&self);
-    fn bind_to_window(&mut self, hwnd: &windows::Win32::Foundation::HWND);
-    fn create_device() -> (IDXGIFactory4, ID3D11Device) where Self: Sized;
-}
 
 pub struct Graphics {
     dxgi_factory: IDXGIFactory4,
@@ -33,11 +22,11 @@ pub struct Graphics {
 }
 
 struct Resources {
-    pub swap_chain: IDXGISwapChain3,
+    pub swap_chain: IDXGISwapChain1,
 }
 
-impl DXGrapics for Graphics {
-    fn setup(hwnd: windows::Win32::Foundation::HWND) -> Graphics {
+impl Graphics {
+    pub fn setup(hwnd: windows::Win32::Foundation::HWND) -> Graphics {
         let (dxgi_factory, device) = Graphics::create_device();
         let mut graphics = Graphics { dxgi_factory, device, resources: None };
 
@@ -46,8 +35,8 @@ impl DXGrapics for Graphics {
         return graphics;
     }
 
-    fn end_frame(&self) {
-        let _ = unsafe { self.resources.as_ref().unwrap().swap_chain.Present(1, 0) };
+    pub fn end_frame(&self) {
+        let _ = unsafe { self.resources.as_ref().unwrap().swap_chain.Present(0, 0) };
     }
 
     fn bind_to_window(&mut self, hwnd: &windows::Win32::Foundation::HWND) {
@@ -65,7 +54,7 @@ impl DXGrapics for Graphics {
             ..Default::default()
         };
 
-        let swap_chain: IDXGISwapChain3 = unsafe {
+        let swap_chain: IDXGISwapChain1 = unsafe {
             self.dxgi_factory.CreateSwapChainForHwnd(
                 &self.device,
                 *hwnd,
@@ -73,8 +62,7 @@ impl DXGrapics for Graphics {
                 None,
                 None,
             ).unwrap()
-        }
-        .cast().unwrap();
+        };
 
         self.resources = Some(Resources {swap_chain});
     }
