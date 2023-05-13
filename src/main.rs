@@ -1,7 +1,6 @@
 use app::App;
 
 mod app;
-mod graphics;
 mod window;
 
 fn main() {

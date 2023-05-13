@@ -1,4 +1,3 @@
-use crate::{loc, graphics::Graphics};
 use windows::{
     core::{PCSTR, PSTR},
     s,
@@ -26,12 +25,13 @@ use windows::{
     },
 };
 
-use self::{keyboard::Keyboard, mouse::Mouse};
+use self::{keyboard::Keyboard, mouse::Mouse, graphics::Graphics, errors::ErrorBase};
 
-pub mod error;
+pub mod errors;
 pub mod keyboard;
 pub mod message;
 pub mod mouse;
+pub mod graphics;
 
 /**
     We need some public variables for the wndproc because we can't pass in any other arguments in that function.<br>
@@ -128,10 +128,10 @@ impl Window<'_> {
         */
         let instance: HMODULE = unsafe {
             GetModuleHandleA(None).unwrap_or_else(|_| {
-                error::WindowError::new(
+                errors::window::WindowError::new(
                     "Unable to create an hInstance with GetModuleHandle.",
                     None,
-                    loc!(),
+                    crate::loc!(),
                 );
             })
         };
@@ -142,6 +142,7 @@ impl Window<'_> {
             For more info about the fields of this class:
             https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-wndclassexa
         */
+
         let class: WNDCLASSEXA = WNDCLASSEXA {
             cbSize: std::mem::size_of::<WNDCLASSEXA>() as u32,
             style,
@@ -149,7 +150,11 @@ impl Window<'_> {
             hInstance: instance,
             hCursor: unsafe {
                 LoadCursorW(None, IDC_ARROW).unwrap_or_else(|_| {
-                    error::WindowError::new("Unable to load cursor.", None, loc!());
+                    errors::window::WindowError::new(
+                        "Unable to load cursor.", 
+                        None, 
+                        crate::loc!()
+                    )
                 })
             },
             lpszClassName: class_name,

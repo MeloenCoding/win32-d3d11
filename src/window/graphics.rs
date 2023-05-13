@@ -14,7 +14,6 @@ use windows::{
     }},
 };
 
-
 pub struct Graphics {
     dxgi_factory: IDXGIFactory4,
     device: ID3D11Device,

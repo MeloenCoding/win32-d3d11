@@ -20,6 +20,7 @@ struct Fps {
 }
 
 impl App<'_> {
+    const RGBA_NORM: f32 = 1.0 / 255.0;
     pub fn create() -> App<'static> {
         let app = App {
             window: Window::new("Example App", CS_OWNDC, 1000, 750),
@@ -50,7 +51,7 @@ impl App<'_> {
 
     pub fn render_frame(&mut self) {
         // Test
-        self.window.graphics.clear_buffer([0.0, 0.0, 127.0, 0.0]);
+        self.window.graphics.clear_buffer(Self::rgba_norm(245, 40, 145, 0.8));
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {
@@ -67,6 +68,10 @@ impl App<'_> {
 
         // Debug
         self.calc_fps();
+    }
+
+    fn rgba_norm(r: u8, g: u8, b: u8, a: f32) -> [f32; 4] {
+        return [r as f32 * Self::RGBA_NORM, g as f32 * Self::RGBA_NORM, b as f32 * Self::RGBA_NORM, a];
     }
 
     fn calc_fps(&mut self) {
