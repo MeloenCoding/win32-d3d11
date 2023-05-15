@@ -4,7 +4,7 @@ pub struct WindowError {
     pub origin: super::CallLocation,
 }
 
-impl super::ErrorBase for WindowError {}
+impl super::FatalErrorBase for WindowError {}
 
 impl std::fmt::Display for WindowError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

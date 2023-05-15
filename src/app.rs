@@ -10,13 +10,13 @@ pub struct App<'a> {
     time_buffer: SystemTime,
     debug: bool,
     clock_count: u128,
-    fps: Fps
+    fps: Fps,
 }
 
 struct Fps {
     high: u128,
     total: u128,
-    low: u128
+    low: u128,
 }
 
 impl App<'_> {
@@ -28,7 +28,11 @@ impl App<'_> {
             time_buffer: SystemTime::now(),
             debug: true,
             clock_count: 0,
-            fps: Fps { high: 0, total: 0, low: u128::MAX }
+            fps: Fps {
+                high: 0,
+                total: 0,
+                low: u128::MAX,
+            },
         };
         app.window.show_window();
         return app;
@@ -43,7 +47,6 @@ impl App<'_> {
                 break;
             }
             self.render_frame();
-
         }
         self.print_fps_stats();
         return exit_code.unwrap();
@@ -51,12 +54,14 @@ impl App<'_> {
 
     pub fn render_frame(&mut self) {
         // Test
-        self.window.graphics.clear_buffer(Self::rgba_norm(245, 40, 145, 0.8));
+        self.window
+            .graphics
+            .clear_buffer(Self::rgba_norm(245, 40, 145, 0.8));
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {
             self.input_buffer.push(ch);
-        }   
+        }
 
         if self.window.keyboard.key_is_pressed_pop(VK_RETURN.0) {
             println!("{:?}", self.input_buffer);
@@ -71,12 +76,20 @@ impl App<'_> {
     }
 
     fn rgba_norm(r: u8, g: u8, b: u8, a: f32) -> [f32; 4] {
-        return [r as f32 * Self::RGBA_NORM, g as f32 * Self::RGBA_NORM, b as f32 * Self::RGBA_NORM, a];
+        return [
+            r as f32 * Self::RGBA_NORM,
+            g as f32 * Self::RGBA_NORM,
+            b as f32 * Self::RGBA_NORM,
+            a,
+        ];
     }
 
     fn calc_fps(&mut self) {
-        if !self.debug { return }
-        let time_alive: std::time::Duration = SystemTime::now().duration_since(self.time_buffer).unwrap();
+        if !self.debug {
+            return;
+        }
+        let time_alive: std::time::Duration =
+            SystemTime::now().duration_since(self.time_buffer).unwrap();
 
         let frame_time = time_alive.as_micros();
 
@@ -88,16 +101,18 @@ impl App<'_> {
             self.fps.low = cur;
         }
         println!("fps: {cur}");
-        
+
         self.fps.total += cur;
         self.clock_count += 1;
         self.time_buffer = SystemTime::now();
     }
 
     fn print_fps_stats(&self) {
-        if !self.debug { return }
+        if !self.debug {
+            return;
+        }
         println!("fps highest: {}", self.fps.high);
         println!("fps lowest: {}", self.fps.low);
-        println!("fps avg: {}", self.fps.total / self.clock_count );
+        println!("fps avg: {}", self.fps.total / self.clock_count);
     }
 }
