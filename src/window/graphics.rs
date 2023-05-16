@@ -19,9 +19,10 @@ use windows::{
 
 use crate::loc;
 
-use super::errors::{self, FatalErrorBase};
+use super::errors::{self, dx_info_module::Manager, FatalErrorBase};
 
 pub struct Graphics {
+    pub dx_info_manager: Option<crate::window::errors::dx_info_module::Manager>,
     dxgi_factory: IDXGIFactory4,
     device: ID3D11Device,
     resources: Option<Resources>,
@@ -34,12 +35,19 @@ struct Resources {
 }
 
 impl Graphics {
-    pub fn setup(hwnd: windows::Win32::Foundation::HWND) -> Graphics {
+    pub fn setup(hwnd: windows::Win32::Foundation::HWND, debug: bool) -> Graphics {
         let (dxgi_factory, device) = Graphics::create_device();
+        let mut dx_info_manager = None;
+
+        if debug {
+            dx_info_manager = Some(Manager::new());
+        }
+
         let mut graphics = Graphics {
             dxgi_factory,
             device,
             resources: None,
+            dx_info_manager,
         };
 
         graphics.bind_to_window(&hwnd);

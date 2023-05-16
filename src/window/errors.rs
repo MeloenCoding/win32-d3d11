@@ -1,3 +1,4 @@
+pub mod dx_info_module;
 pub mod graphics;
 pub mod window;
 

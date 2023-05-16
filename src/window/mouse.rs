@@ -219,6 +219,7 @@ impl Mouse {
         trim_buffer(&mut self.event_queue);
     }
 
+    #[allow(dead_code)]
     pub fn get_pos(&self) -> POINTS {
         POINTS {
             x: self.x,
@@ -226,6 +227,7 @@ impl Mouse {
         }
     }
 
+    #[allow(dead_code)]
     pub fn read(&mut self) -> Option<MouseEvent> {
         if !self.event_queue.is_empty() {
             let e: Option<MouseEvent> = Some(self.event_queue.last().unwrap().to_owned());

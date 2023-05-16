@@ -1,12 +1,10 @@
 use windows::{
-    core::{PCSTR},
+    core::PCSTR,
     s,
     Win32::{
         Foundation::{BOOL, HMODULE, HWND, LPARAM, LRESULT, POINTS, WPARAM},
         Graphics::Gdi::HBRUSH,
-        System::{
-            LibraryLoader::GetModuleHandleA,
-        },
+        System::LibraryLoader::GetModuleHandleA,
         UI::{
             Input::KeyboardAndMouse::{ReleaseCapture, SetCapture},
             WindowsAndMessaging::{
@@ -118,6 +116,7 @@ impl Window<'_> {
         style: WNDCLASS_STYLES,
         window_width: i16,
         window_height: i16,
+        debug: bool,
     ) -> Window<'static> {
         let mut base_details: String = window_name.to_string();
         base_details.push('\0');
@@ -177,7 +176,7 @@ impl Window<'_> {
         let atom: u16 = unsafe { RegisterClassExA(&class) };
 
         if atom == 0 {
-            // check if the registerClass function failed
+            // Check if the registerClass function failed
             panic!("unable to register class");
         }
 
@@ -228,7 +227,7 @@ impl Window<'_> {
             mouse: unsafe { &mut io::MOUSE },
             width: window_width,
             height: window_height,
-            graphics: Graphics::setup(hwnd),
+            graphics: Graphics::setup(hwnd, debug),
         }
     }
 

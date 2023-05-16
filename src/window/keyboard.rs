@@ -54,11 +54,13 @@ impl Keyboard {
     }
 
     /// Check if key is pressed but don't remove it from the KeyEvent queue. See [key_is_pressed_pop()]
+    #[allow(dead_code)]
     pub fn key_is_pressed(&self, target_key: u16) -> bool {
         return self.key_states[target_key as usize] == 1;
     }
 
     /// Get the [KeyEvent] from the [KeyEvent]
+    #[allow(dead_code)]
     pub fn read_key(&mut self) -> Option<KeyEvent> {
         if !self.key_queue.is_empty() {
             let e: KeyEvent = self.key_queue.last().unwrap().to_owned();
@@ -78,14 +80,17 @@ impl Keyboard {
         return None;
     }
 
+    #[allow(dead_code)]
     pub fn clear_key_queue(&mut self) {
         self.key_queue = vec![];
     }
 
+    #[allow(dead_code)]
     pub fn clear_char_queue(&mut self) {
         self.char_queue = vec![];
     }
 
+    #[allow(dead_code)]
     pub fn clear_all_queues(&mut self) {
         self.clear_char_queue();
         self.clear_key_queue();

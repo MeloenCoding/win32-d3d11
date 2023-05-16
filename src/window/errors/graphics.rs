@@ -7,6 +7,10 @@ pub struct GraphicsError {}
 
 impl super::FatalErrorBase for GraphicsError {}
 
+pub struct DeviceRemovedError {}
+
+impl FatalErrorBase for DeviceRemovedError {}
+
 pub struct HResultError {}
 
 impl HResultError {
@@ -30,12 +34,8 @@ impl HResultError {
     }
 }
 
-pub struct DeviceRemovedError {}
-
-impl FatalErrorBase for DeviceRemovedError {}
-
 pub fn dx_get_error_description(hr: HRESULT, fallback_desc: &str) -> String {
-    let mut err_buffer: *mut u8 = std::ptr::null_mut(); // Create a buffer for windows where it should store the error message
+    let mut err_buffer: *mut u8 = std::ptr::null_mut(); // Create a empty pointer buffer for windows to change it later to a pointer to the error string
 
     if hr.0 < 0 {
         return format!(
