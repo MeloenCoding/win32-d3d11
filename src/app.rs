@@ -1,8 +1,14 @@
 use std::time::SystemTime;
 
-use windows::Win32::UI::{Input::KeyboardAndMouse::VK_RETURN, WindowsAndMessaging::CS_OWNDC};
+use windows::{
+    Win32::{
+        UI::{Input::KeyboardAndMouse::VK_RETURN, WindowsAndMessaging::CS_OWNDC},
+    },
+};
 
-use crate::window::Window;
+use crate::{
+    window::Window,
+};
 
 pub struct App<'a> {
     pub window: Window<'a>,
@@ -22,11 +28,12 @@ struct Fps {
 impl App<'_> {
     const RGBA_NORM: f32 = 1.0 / 255.0;
     pub fn create() -> App<'static> {
+        let debug = true;
         let app = App {
-            window: Window::new("Example App", CS_OWNDC, 1000, 750),
+            window: Window::new("Example App", CS_OWNDC, 1000, 750, debug),
             input_buffer: String::new(),
             time_buffer: SystemTime::now(),
-            debug: true,
+            debug,
             clock_count: 0,
             fps: Fps {
                 high: 0,
@@ -41,6 +48,7 @@ impl App<'_> {
     pub fn launch(&mut self) -> usize {
         let mut exit_code: Option<usize>;
         self.time_buffer = SystemTime::now();
+
         loop {
             exit_code = self.window.handle_messages();
             if exit_code.is_some() {
@@ -48,15 +56,29 @@ impl App<'_> {
             }
             self.render_frame();
         }
-        self.print_fps_stats();
+
+        if self.debug {
+            self.print_fps_stats();
+            
+            unsafe { self.window.graphics.dx_info_manager.as_mut().unwrap().info_queue.AddMessage(windows::Win32::Graphics::Dxgi::DXGI_DEBUG_APP,
+                windows::Win32::Graphics::Dxgi::DXGI_INFO_QUEUE_MESSAGE_CATEGORY_INITIALIZATION, windows::Win32::Graphics::Dxgi::DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR,
+                69, windows::core::PCSTR::from_raw("Test Error message\0".as_ptr()))
+            }.unwrap_or_else(|e| {
+                crate::window::errors::graphics::HResultError::new(e.code(), crate::loc!(), &e.message().to_string())
+            });
+
+            for msg in self.window.graphics.dx_info_manager.as_ref().unwrap().get_messages() {
+                println!("{}", msg);
+            }
+            
+        }
+
         return exit_code.unwrap();
     }
 
     pub fn render_frame(&mut self) {
         // Test
-        self.window
-            .graphics
-            .clear_buffer(Self::rgba_norm(245, 40, 145, 0.8));
+        self.window.graphics.clear_buffer(Self::rgba_norm(245, 40, 145, 0.8));
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {
@@ -72,7 +94,9 @@ impl App<'_> {
         self.window.graphics.end_frame();
 
         // Debug
-        self.calc_fps();
+        if self.debug {
+            self.calc_fps();
+        }
     }
 
     fn rgba_norm(r: u8, g: u8, b: u8, a: f32) -> [f32; 4] {
@@ -85,21 +109,20 @@ impl App<'_> {
     }
 
     fn calc_fps(&mut self) {
-        if !self.debug {
-            return;
-        }
         let time_alive: std::time::Duration =
             SystemTime::now().duration_since(self.time_buffer).unwrap();
 
         let frame_time = time_alive.as_micros();
 
         let cur = 1_000_000 / frame_time;
+
         if self.fps.high < cur {
             self.fps.high = cur;
         }
         if self.fps.low > cur {
             self.fps.low = cur;
         }
+        
         println!("fps: {cur}");
 
         self.fps.total += cur;
