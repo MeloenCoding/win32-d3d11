@@ -1,3 +1,5 @@
+use super::graphics::Graphics;
+
 pub mod dx_info_module;
 pub mod graphics;
 pub mod window;
@@ -21,7 +23,12 @@ macro_rules! loc {
 }
 
 pub trait FatalErrorBase {
-    fn new(error_details: &str, error_code: Option<i32>, origin: CallLocation) -> ! {
+    fn new(
+        error_details: &str,
+        error_code: Option<i32>,
+        origin: CallLocation,
+        graphics: Option<&Graphics>,
+    ) -> ! {
         let base_details: String = format!(
             "Error in {}:{}\n{}\0",
             origin.file, origin.line, error_details
@@ -36,6 +43,18 @@ pub trait FatalErrorBase {
                 | windows::Win32::UI::WindowsAndMessaging::MB_OK,
             0,
         );
+
+        if graphics.is_some() {
+            for msg in graphics
+                .unwrap()
+                .dx_info_manager
+                .as_ref()
+                .unwrap()
+                .get_messages()
+            {
+                println!("{:#?}", msg);
+            }
+        }
 
         std::process::exit(error_code.unwrap_or(1));
     }

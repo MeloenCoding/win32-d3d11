@@ -1,14 +1,11 @@
 use std::time::SystemTime;
 
-use windows::{
-    Win32::{
-        UI::{Input::KeyboardAndMouse::VK_RETURN, WindowsAndMessaging::CS_OWNDC},
-    },
+use windows::Win32::UI::{
+    Input::KeyboardAndMouse::VK_RETURN,
+    WindowsAndMessaging::CS_OWNDC,
 };
 
-use crate::{
-    window::Window,
-};
+use crate::window::Window;
 
 pub struct App<'a> {
     pub window: Window<'a>,
@@ -17,6 +14,7 @@ pub struct App<'a> {
     debug: bool,
     clock_count: u128,
     fps: Fps,
+    perf_counter: i64,
 }
 
 struct Fps {
@@ -40,6 +38,7 @@ impl App<'_> {
                 total: 0,
                 low: u128::MAX,
             },
+            perf_counter: 0,
         };
         app.window.show_window();
         return app;
@@ -47,6 +46,7 @@ impl App<'_> {
 
     pub fn launch(&mut self) -> usize {
         let mut exit_code: Option<usize>;
+        // unsafe { windows::Win32::System::Performance::QueryPerformanceCounter(&mut self.perf_counter) };
         self.time_buffer = SystemTime::now();
 
         loop {
@@ -59,18 +59,27 @@ impl App<'_> {
 
         if self.debug {
             self.print_fps_stats();
-            
-            unsafe { self.window.graphics.dx_info_manager.as_mut().unwrap().info_queue.AddMessage(windows::Win32::Graphics::Dxgi::DXGI_DEBUG_APP,
-                windows::Win32::Graphics::Dxgi::DXGI_INFO_QUEUE_MESSAGE_CATEGORY_INITIALIZATION, windows::Win32::Graphics::Dxgi::DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR,
-                69, windows::core::PCSTR::from_raw("Test Error message\0".as_ptr()))
-            }.unwrap_or_else(|e| {
-                crate::window::errors::graphics::HResultError::new(e.code(), crate::loc!(), &e.message().to_string())
-            });
 
-            for msg in self.window.graphics.dx_info_manager.as_ref().unwrap().get_messages() {
-                println!("{}", msg);
+            println!("{}", self.perf_counter);
+
+            // Example DirectX error
+            // unsafe { self.window.graphics.dx_info_manager.as_mut().unwrap().info_queue.AddMessage(windows::Win32::Graphics::Dxgi::DXGI_DEBUG_APP,
+            //     windows::Win32::Graphics::Dxgi::DXGI_INFO_QUEUE_MESSAGE_CATEGORY_INITIALIZATION, windows::Win32::Graphics::Dxgi::DXGI_INFO_QUEUE_MESSAGE_SEVERITY_ERROR,
+            //     69, windows::core::PCSTR::from_raw("Test Error message\0".as_ptr()))
+            // }.unwrap_or_else(|e| {
+            //     crate::window::errors::graphics::HResultError::new(e.code(), crate::loc!(), &e.message().to_string())
+            // });
+
+            for msg in self
+                .window
+                .graphics
+                .dx_info_manager
+                .as_ref()
+                .unwrap()
+                .get_messages()
+            {
+                println!("{:?}", msg);
             }
-            
         }
 
         return exit_code.unwrap();
@@ -78,7 +87,8 @@ impl App<'_> {
 
     pub fn render_frame(&mut self) {
         // Test
-        self.window.graphics.clear_buffer(Self::rgba_norm(245, 40, 145, 0.8));
+        self.window.graphics.test_triangle();
+        // self.window.graphics.clear_buffer(Self::rgba_norm(245, 40, 145, 0.0));
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {
@@ -122,7 +132,7 @@ impl App<'_> {
         if self.fps.low > cur {
             self.fps.low = cur;
         }
-        
+
         println!("fps: {cur}");
 
         self.fps.total += cur;

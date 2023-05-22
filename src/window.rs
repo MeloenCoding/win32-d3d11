@@ -133,6 +133,7 @@ impl Window<'_> {
                     "Unable to create an hInstance with GetModuleHandle.",
                     None,
                     crate::loc!(),
+                    None,
                 );
             })
         };
@@ -151,7 +152,12 @@ impl Window<'_> {
             hInstance: instance,
             hCursor: unsafe {
                 LoadCursorW(None, IDC_ARROW).unwrap_or_else(|_| {
-                    errors::window::WindowError::new("Unable to load cursor.", None, crate::loc!())
+                    errors::window::WindowError::new(
+                        "Unable to load cursor.",
+                        None,
+                        crate::loc!(),
+                        None,
+                    )
                 })
             },
             lpszClassName: class_name,
@@ -227,7 +233,7 @@ impl Window<'_> {
             mouse: unsafe { &mut io::MOUSE },
             width: window_width,
             height: window_height,
-            graphics: Graphics::setup(hwnd, debug),
+            graphics: Graphics::setup(hwnd, debug, window_height, window_width),
         }
     }
 
@@ -263,6 +269,8 @@ impl Window<'_> {
             For more info about wndproc see: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nc-winuser-wndproc
             And for a list with all the messages see: https://wiki.winehq.org/List_Of_Windows_Messages
         */
+
+        // println!("{}", message::_id_to_name(msg));
 
         unsafe {
             match msg {

@@ -300,3 +300,35 @@ pub fn _id_to_name(id: u32) -> String {
 
     return map.get(&id).unwrap_or(&"No description found").to_string();
 }
+
+pub fn dx_severity_id_to_str(
+    severity: windows::Win32::Graphics::Dxgi::DXGI_INFO_QUEUE_MESSAGE_SEVERITY,
+) -> Result<String, ()> {
+    match severity.0 {
+        0 => Ok("Corruption".to_string()),
+        1 => Ok("Error".to_string()),
+        2 => Ok("Warning".to_string()),
+        3 => Ok("Info".to_string()),
+        4 => Ok("Message".to_string()),
+        _ => Err(()),
+    }
+}
+
+pub fn dx_category_id_to_str(
+    category: windows::Win32::Graphics::Dxgi::DXGI_INFO_QUEUE_MESSAGE_CATEGORY,
+) -> Result<String, ()> {
+    match category.0 {
+        0 => Ok("Unknown".to_string()),
+        1 => Ok("Miscellaneous".to_string()),
+        2 => Ok("Initialization".to_string()),
+        3 => Ok("Cleanup".to_string()),
+        4 => Ok("Compilation".to_string()),
+        5 => Ok("State Creation".to_string()),
+        6 => Ok("State Setting".to_string()),
+        7 => Ok("State Getting".to_string()),
+        8 => Ok("Resource Manipulation".to_string()),
+        9 => Ok("Excecution".to_string()),
+        10 => Ok("Shader".to_string()),
+        _ => Err(()),
+    }
+}
