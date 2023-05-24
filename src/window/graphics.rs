@@ -20,12 +20,12 @@ use windows::{
                 D3D11_CPU_ACCESS_FLAG, D3D11_CREATE_DEVICE_DEBUG, D3D11_INPUT_ELEMENT_DESC,
                 D3D11_INPUT_PER_VERTEX_DATA,
                 D3D11_RESOURCE_MISC_FLAG, D3D11_SDK_VERSION, D3D11_SUBRESOURCE_DATA,
-                D3D11_USAGE_DEFAULT, D3D11_VIEWPORT,
+                D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BIND_INDEX_BUFFER,
             },
             Dxgi::{
                 Common::{
                     DXGI_ALPHA_MODE_UNSPECIFIED, DXGI_FORMAT_R32G32_FLOAT,
-                    DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC,
+                    DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC, DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R16_UINT,
                 },
                 CreateDXGIFactory2, IDXGIFactory4, IDXGISwapChain1, DXGI_ERROR_DEVICE_REMOVED, DXGI_SCALING_STRETCH, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_EFFECT_FLIP_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT,
             },
@@ -55,7 +55,13 @@ pub struct Resources {
 pub struct VECTOR2 {
     x: f32,
     y: f32,
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
 }
+
+const _RGBA_NORM: f32 = 1.0 / 255.0;
 
 impl Graphics {
     pub fn setup(
@@ -104,6 +110,15 @@ impl Graphics {
         }
     }
 
+    fn rgba_norm(r: u8, g: u8, b: u8, a: f32) -> [f32; 4] {
+        return [
+            r as f32 * _RGBA_NORM,
+            g as f32 * _RGBA_NORM,
+            b as f32 * _RGBA_NORM,
+            a,
+        ];
+    }
+
     pub fn clear_buffer(&self, rgba: [f32; 4]) {
         unsafe {
             self.resources
@@ -121,31 +136,33 @@ impl Graphics {
         let shader_path = std::env::current_exe().ok().unwrap().parent().unwrap().parent().unwrap().parent().unwrap().join("src\\window\\graphics\\shaders"); 
 
         // Create triangle vertex's
-        // let vertices: Vec<D3DVECTOR> = vec![
-        //     D3DVECTOR {x: 0.0, y: 0.5, z: 0.0},
-        //     D3DVECTOR {x: 0.5, y: -0.5, z: 0.0},
-        //     D3DVECTOR {x: -0.5, y: -0.5, z: 0.0},
-        // ];
-
         let vertices: Vec<VECTOR2> = vec![
-            VECTOR2 { x: 0.0, y: 0.5 },
-            VECTOR2 { x: 0.5, y: -0.5 },
-            VECTOR2 { x: -0.5, y: -0.5 },
-        ];
+            VECTOR2 {x:0.0, y:0.5, r: 255, g: 0, b: 0, a: 255 },
 
-        let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
-        // if cfg!(debug_assertions) {
-        //     D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
-        //     // 0
-        // } else {
-        //     0
-        // };
+            VECTOR2 {x:0.5, y: -0.5, r: 0, g: 255, b: 0, a: 255 },
+
+            VECTOR2 {x: -0.5, y: -0.5, r: 0, g: 0, b: 255, a: 255 },
+
+            VECTOR2 {x: -0.3, y: 0.3, r: 0, g: 255, b: 0, a: 255 },
+
+            VECTOR2 {x: 0.3, y: 0.3, r: 0, g: 0, b: 255, a: 255 },
+
+            VECTOR2 {x: 0.0, y: -0.8, r: 255, g: 0, b: 0, a: 255 },
+            ];
+
+        // let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+        let compile_flags = if cfg!(debug_assertions) {
+            D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION
+            // 0
+        } else {
+            0
+        };
 
         // Create a vertex buffer
         let vertex_buff: *mut Option<ID3D11Buffer> = &mut None;
 
         let buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
-            ByteWidth: std::mem::size_of_val(&vertices) as u32,
+            ByteWidth: (vertices.len() * std::mem::size_of::<VECTOR2>()) as u32,
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_VERTEX_BUFFER,
             CPUAccessFlags: D3D11_CPU_ACCESS_FLAG::default(),
@@ -173,6 +190,48 @@ impl Graphics {
                 Some(self),
             )
         });
+
+        // Create index buffer
+        let indices: Vec<u16> = vec![
+            0,1,2,
+            0,2,3,
+            0,4,1,
+            2,1,5,
+        ];
+
+        let index_buffer: *mut Option<ID3D11Buffer> = &mut None;
+
+        let indices_buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
+            ByteWidth: (indices.len() * std::mem::size_of::<VECTOR2>()) as u32,
+            Usage: D3D11_USAGE_DEFAULT,
+            BindFlags: D3D11_BIND_INDEX_BUFFER,
+            CPUAccessFlags: D3D11_CPU_ACCESS_FLAG::default(),
+            MiscFlags: D3D11_RESOURCE_MISC_FLAG::default(),
+            StructureByteStride: std::mem::size_of::<VECTOR2>() as u32,
+        };
+
+        let indices_data: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
+            pSysMem: indices.as_ptr() as *const _,
+            SysMemPitch: 0,
+            SysMemSlicePitch: 0,
+        };
+
+        unsafe {
+            &self
+                .device
+                .CreateBuffer(&indices_buff_desc, Some(&indices_data), Some(index_buffer))
+        }
+        .as_ref()
+        .unwrap_or_else(|e| {
+            errors::graphics::GraphicsError::new(
+                &e.message().to_string(),
+                Some(e.code().0),
+                loc!(),
+                Some(self),
+            )
+        }); 
+
+        unsafe { context.IASetIndexBuffer((*index_buffer).as_ref().unwrap(), DXGI_FORMAT_R16_UINT, 0) };
 
         // Create VertexBuffer on the Input Assembler (IA) [see](https://learn.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-graphics-pipeline)
         let mut stride = std::mem::size_of::<VECTOR2>() as u32;
@@ -320,24 +379,32 @@ impl Graphics {
 
         unsafe { context.IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) }
 
-        let element_desc = D3D11_INPUT_ELEMENT_DESC {
+        let pos_element_desc = D3D11_INPUT_ELEMENT_DESC {
             SemanticName: s!("Position"),
             SemanticIndex: 0,
             Format: DXGI_FORMAT_R32G32_FLOAT,
             InputSlot: 0,
-            AlignedByteOffset: 0,
+            AlignedByteOffset: D3D11_APPEND_ALIGNED_ELEMENT,
             InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
             InstanceDataStepRate: 0,
         };
 
-        let input_layout: Option<*mut Option<ID3D11InputLayout>> = Some(&mut None);
+        let col_element_desc = D3D11_INPUT_ELEMENT_DESC {
+            SemanticName: s!("Color"),
+            SemanticIndex: 0,
+            Format: DXGI_FORMAT_R8G8B8A8_UNORM,
+            InputSlot: 0,
+            AlignedByteOffset: D3D11_APPEND_ALIGNED_ELEMENT,
+            InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
+            InstanceDataStepRate: 0,
+        };
 
+        let input_element_desc: Vec<D3D11_INPUT_ELEMENT_DESC> = vec![pos_element_desc, col_element_desc];
+
+        let input_layout: Option<*mut Option<ID3D11InputLayout>> = Some(&mut None);
         unsafe {
             self.device.CreateInputLayout(
-                Some(element_desc)
-                    .as_ref()
-                    .map(core::slice::from_ref)
-                    .unwrap(),
+                &input_element_desc,
                 from_raw_parts(
                     vertex_blob.as_ref().unwrap().GetBufferPointer().cast(),
                     vertex_blob.as_ref().unwrap().GetBufferSize(),
@@ -356,7 +423,7 @@ impl Graphics {
 
         unsafe { context.IASetInputLayout((*input_layout.unwrap()).as_ref().unwrap()) };
 
-        unsafe { context.Draw(vertices.len().try_into().unwrap(), 0) };
+        unsafe { context.DrawIndexed(indices.len().try_into().unwrap(), 0, 0) };
     }
 
     fn bind_to_window(&mut self, hwnd: &windows::Win32::Foundation::HWND) {
