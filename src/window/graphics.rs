@@ -119,14 +119,19 @@ impl Graphics {
         ];
     }
 
+    
     pub fn clear_buffer(&self, rgba: [f32; 4]) {
         unsafe {
             self.resources
-                .as_ref()
-                .unwrap()
-                .context
-                .ClearRenderTargetView(&self.resources.as_ref().unwrap().target, &rgba[0])
+            .as_ref()
+            .unwrap()
+            .context
+            .ClearRenderTargetView(&self.resources.as_ref().unwrap().target, &rgba[0])
         };
+    }
+        
+    pub fn draw_sample_text(&self) {
+        // self.
     }
 
     pub fn test_triangle(&self) {
