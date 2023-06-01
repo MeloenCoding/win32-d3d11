@@ -49,7 +49,10 @@ pub trait FatalErrorBase {
                 .unwrap()
                 .dx_info_manager
                 .as_ref()
-                .unwrap()
+                .unwrap_or_else(|| { 
+                    println!("For an error log you should enable debug mode."); 
+                    std::process::exit(error_code.unwrap_or(1));
+                })
                 .get_messages()
             {
                 println!("{:#?}", msg);

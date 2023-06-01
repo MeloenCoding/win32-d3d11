@@ -25,7 +25,7 @@ struct Fps {
 
 impl App<'_> {
     pub fn create() -> App<'static> {
-        let debug = false;
+        let debug = true;
         let app = App {
             window: Window::new("Example App", CS_OWNDC, 1000, 750, debug),
             input_buffer: String::new(),
@@ -86,7 +86,9 @@ impl App<'_> {
 
     pub fn render_frame(&mut self) {
         // Test
-        self.window.graphics.test_triangle();
+        let angle: f32 = 0.0;
+
+        self.window.graphics.test_triangle(angle);
         // self.window.graphics.clear_buffer(Self::rgba_norm(245, 40, 145, 0.0));
 
         // App logic

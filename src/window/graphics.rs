@@ -20,7 +20,7 @@ use windows::{
                 D3D11_CPU_ACCESS_FLAG, D3D11_CREATE_DEVICE_DEBUG, D3D11_INPUT_ELEMENT_DESC,
                 D3D11_INPUT_PER_VERTEX_DATA,
                 D3D11_RESOURCE_MISC_FLAG, D3D11_SDK_VERSION, D3D11_SUBRESOURCE_DATA,
-                D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BIND_INDEX_BUFFER,
+                D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BIND_INDEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_BIND_CONSTANT_BUFFER, D3D11_CPU_ACCESS_WRITE,
             },
             Dxgi::{
                 Common::{
@@ -50,6 +50,10 @@ pub struct Resources {
     pub swap_chain: IDXGISwapChain1,
     pub context: ID3D11DeviceContext,
     pub target: ID3D11RenderTargetView,
+}
+
+pub struct ConstantBuffer {
+    element: Vec<Vec<f32>>
 }
 
 pub struct VECTOR2 {
@@ -134,7 +138,7 @@ impl Graphics {
         // self.
     }
 
-    pub fn test_triangle(&self) {
+    pub fn test_triangle(&self, angle: f32) {
         let context = &self.resources.as_ref().unwrap().context;
 
         // Please ignore :) i hate it as much as you do... and im lazy
@@ -153,7 +157,7 @@ impl Graphics {
             VECTOR2 {x: 0.3, y: 0.3, r: 0, g: 0, b: 255, a: 255 },
 
             VECTOR2 {x: 0.0, y: -0.8, r: 255, g: 0, b: 0, a: 255 },
-            ];
+        ];
 
         // let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
         let compile_flags = if cfg!(debug_assertions) {
@@ -305,6 +309,52 @@ impl Graphics {
 
         // And set them on the Vertex Stage (VS) [see](https://learn.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-graphics-pipeline)
         unsafe { context.VSSetShader(&vertex_shader.unwrap(), None) };
+        
+        let const_buff: *mut Option<ID3D11Buffer> = &mut None;
+
+        let vs_const_buff: ConstantBuffer = self::ConstantBuffer {
+            element: vec![
+                vec![f32::cos(angle), f32::sin(angle), 0.0, 0.0],
+                vec![-f32::sin(angle), f32::cos(angle), 0.0, 0.0],
+                vec![0.0, 0.0, 1.0, 0.0],
+                vec![0.0, 0.0, 0.0, 1.0]
+            ]
+        };
+
+        let const_subresource_data: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
+            pSysMem: vs_const_buff.element.as_ptr() as *const _,
+            SysMemPitch: 0,
+            SysMemSlicePitch: 0,
+        };
+
+        let const_buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
+            ByteWidth: (std::mem::size_of::<ConstantBuffer>()) as u32,
+            Usage: D3D11_USAGE_DYNAMIC,
+            BindFlags: D3D11_BIND_CONSTANT_BUFFER,
+            CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
+            MiscFlags: D3D11_RESOURCE_MISC_FLAG::default(),
+            StructureByteStride: 0,
+            // StructureByteStride: std::mem::size_of::<VECTOR2>() as u32,
+        };
+
+        let asd = windows::Win32::Graphics::Direct3D11::D3D11_MESSAGE_ID_DESTROY_COUNTER;
+
+        unsafe {
+            &self
+                .device
+                .CreateBuffer(&const_buff_desc, Some(&const_subresource_data), Some(const_buff))
+        }
+        .as_ref()
+        .unwrap_or_else(|e| {
+            errors::graphics::GraphicsError::new(
+                &e.message().to_string(),
+                Some(e.code().0),
+                loc!(),
+                Some(self),
+            )
+        });  
+
+        // unsafe { context.VSSetConstantBuffers(0, Some(std::slice::from_raw_parts(const_buff, 1))) }
 
         // Same for the pixel shaders
         let pixel_file = shader_path
