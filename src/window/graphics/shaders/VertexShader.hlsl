@@ -3,9 +3,13 @@ struct VSOut {
     float4 pos : SV_Position;
 };
 
+cbuffer CBuf{
+    row_major matrix transform;
+};
+
 VSOut main(float2 pos : Position, float3 color : Color) {
     VSOut vsOut;
-    vsOut.pos = float4(pos.x, pos.y, 0.0f, 1.0f);
+    vsOut.pos = mul( float4(pos.x, pos.y, 0.0f, 1.0f), transform);
     vsOut.color = color;
     return vsOut;
-}
+};

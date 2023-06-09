@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use std::{time::SystemTime, array};
 
 use windows::Win32::UI::{
     Input::KeyboardAndMouse::VK_RETURN,
@@ -11,6 +11,7 @@ pub struct App<'a> {
     pub window: Window<'a>,
     input_buffer: String,
     time_buffer: SystemTime,
+    start_time_buffer: SystemTime,
     debug: bool,
     clock_count: u128,
     fps: Fps,
@@ -30,6 +31,7 @@ impl App<'_> {
             window: Window::new("Example App", CS_OWNDC, 1000, 750, debug),
             input_buffer: String::new(),
             time_buffer: SystemTime::now(),
+            start_time_buffer: SystemTime::now(),
             debug,
             clock_count: 0,
             fps: Fps {
@@ -86,10 +88,10 @@ impl App<'_> {
 
     pub fn render_frame(&mut self) {
         // Test
-        let angle: f32 = 0.0;
+        let angle: f32 = SystemTime::now().duration_since(self.start_time_buffer).unwrap().as_secs_f32();
 
+        self.window.graphics.clear_buffer([0.0; 4]);
         self.window.graphics.test_triangle(angle);
-        // self.window.graphics.clear_buffer(Self::rgba_norm(245, 40, 145, 0.0));
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {

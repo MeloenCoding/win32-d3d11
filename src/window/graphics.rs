@@ -55,6 +55,9 @@ pub struct Resources {
 pub struct ConstantBuffer {
     element: Vec<Vec<f32>>
 }
+pub struct ConstantBuffer2 {
+    element: Vec<f32>
+}
 
 pub struct VECTOR2 {
     x: f32,
@@ -156,7 +159,7 @@ impl Graphics {
 
             VECTOR2 {x: 0.3, y: 0.3, r: 0, g: 0, b: 255, a: 255 },
 
-            VECTOR2 {x: 0.0, y: -0.8, r: 255, g: 0, b: 0, a: 255 },
+            VECTOR2 {x: 0.0, y: -1.0, r: 255, g: 0, b: 0, a: 255 },
         ];
 
         // let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -311,33 +314,31 @@ impl Graphics {
         unsafe { context.VSSetShader(&vertex_shader.unwrap(), None) };
         
         let const_buff: *mut Option<ID3D11Buffer> = &mut None;
-
-        let vs_const_buff: ConstantBuffer = self::ConstantBuffer {
-            element: vec![
-                vec![f32::cos(angle), f32::sin(angle), 0.0, 0.0],
-                vec![-f32::sin(angle), f32::cos(angle), 0.0, 0.0],
-                vec![0.0, 0.0, 1.0, 0.0],
-                vec![0.0, 0.0, 0.0, 1.0]
-            ]
-        };
-
+        const VIEWPORT_NORMALIZER: f32 = 3.0 / 4.0;
+        let vs_const_buff3 = vec![
+            VIEWPORT_NORMALIZER * f32::cos(angle),   f32::sin(angle),    0.0, 0.0,
+            VIEWPORT_NORMALIZER * -f32::sin(angle),  f32::cos(angle),    0.0, 0.0,
+            0.0,               0.0,                1.0, 0.0,
+            0.0,               0.0,                0.0, 1.0
+        ];
+        
         let const_subresource_data: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
-            pSysMem: vs_const_buff.element.as_ptr() as *const _,
+            pSysMem: vs_const_buff3.as_ptr() as *const _,
             SysMemPitch: 0,
             SysMemSlicePitch: 0,
         };
 
+        let const_buff_byte_width = 16 * 4;
+        let byte_width_remainder = const_buff_byte_width % 16;
+
         let const_buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
-            ByteWidth: (std::mem::size_of::<ConstantBuffer>()) as u32,
+            ByteWidth: const_buff_byte_width + 16 - byte_width_remainder,
             Usage: D3D11_USAGE_DYNAMIC,
             BindFlags: D3D11_BIND_CONSTANT_BUFFER,
             CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
             MiscFlags: D3D11_RESOURCE_MISC_FLAG::default(),
             StructureByteStride: 0,
-            // StructureByteStride: std::mem::size_of::<VECTOR2>() as u32,
         };
-
-        let asd = windows::Win32::Graphics::Direct3D11::D3D11_MESSAGE_ID_DESTROY_COUNTER;
 
         unsafe {
             &self
@@ -354,7 +355,7 @@ impl Graphics {
             )
         });  
 
-        // unsafe { context.VSSetConstantBuffers(0, Some(std::slice::from_raw_parts(const_buff, 1))) }
+        unsafe { context.VSSetConstantBuffers(0, Some(std::slice::from_raw_parts(const_buff, 1))) }
 
         // Same for the pixel shaders
         let pixel_file = shader_path
@@ -421,7 +422,7 @@ impl Graphics {
             TopLeftX: 0.0,
             TopLeftY: 0.0,
             Width: self.window_width as f32,
-            Height: self.window_height as f32,
+            Height: self.window_height as f32 - 40.0,
             MinDepth: 0.0,
             MaxDepth: 1.0,
         };
@@ -432,7 +433,7 @@ impl Graphics {
             ))
         };
 
-        unsafe { context.IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) }
+        unsafe { context.IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST) };
 
         let pos_element_desc = D3D11_INPUT_ELEMENT_DESC {
             SemanticName: s!("Position"),
