@@ -1,10 +1,9 @@
 use std::slice::from_raw_parts;
-
 use windows::{
     self,
     s,
     Win32::{
-        Foundation::S_OK,
+        Foundation::{S_OK, TRUE, FALSE},
         Graphics::{
             Direct3D::{
                 Fxc::{
@@ -20,12 +19,12 @@ use windows::{
                 D3D11_CPU_ACCESS_FLAG, D3D11_CREATE_DEVICE_DEBUG, D3D11_INPUT_ELEMENT_DESC,
                 D3D11_INPUT_PER_VERTEX_DATA,
                 D3D11_RESOURCE_MISC_FLAG, D3D11_SDK_VERSION, D3D11_SUBRESOURCE_DATA,
-                D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BIND_INDEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_BIND_CONSTANT_BUFFER, D3D11_CPU_ACCESS_WRITE,
+                D3D11_USAGE_DEFAULT, D3D11_VIEWPORT, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_BIND_INDEX_BUFFER, D3D11_USAGE_DYNAMIC, D3D11_BIND_CONSTANT_BUFFER, D3D11_CPU_ACCESS_WRITE, D3D11_CPU_ACCESS_READ, D3D11_DEPTH_STENCIL_DESC, D3D11_DEPTH_WRITE_MASK, D3D11_DEPTH_WRITE_MASK_ALL, D3D11_COMPARISON_LESS, D3D11_DEPTH_STENCILOP_DESC, ID3D11DepthStencilState, D3D11_TEXTURE2D_DESC, D3D11_BIND_DEPTH_STENCIL, ID3D11Texture2D, ID3D11DepthStencilView, D3D11_DEPTH_STENCIL_VIEW_DESC, D3D11_DSV_DIMENSION_TEXTURE2D, D3D11_DEPTH_STENCIL_VIEW_DESC_0, D3D11_TEX2D_DSV, D3D11_CLEAR_DEPTH,
             },
             Dxgi::{
                 Common::{
                     DXGI_ALPHA_MODE_UNSPECIFIED, DXGI_FORMAT_R32G32B32_FLOAT,
-                    DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC, DXGI_FORMAT_R16_UINT,
+                    DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC, DXGI_FORMAT_R16_UINT, DXGI_FORMAT_D32_FLOAT,
                 },
                 CreateDXGIFactory2, IDXGIFactory4, IDXGISwapChain1, DXGI_ERROR_DEVICE_REMOVED, DXGI_SCALING_STRETCH, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_EFFECT_FLIP_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT,
             },
@@ -52,25 +51,24 @@ pub struct Resources {
     pub swap_chain: IDXGISwapChain1,
     pub context: ID3D11DeviceContext,
     pub target: ID3D11RenderTargetView,
-}
-
-pub struct VECTOR2 {
-    x: f32,
-    y: f32,
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
+    pub depth_stencil_view: ID3D11DepthStencilView
 }
 
 pub struct VECTOR3 {
     x: f32,
     y: f32,
     z: f32,
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
+}
+
+pub struct RGBA {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32
+}
+
+pub struct CB2 {
+    face_colors: [RGBA; 6]
 }
 
 const _RGBA_NORM: f32 = 1.0 / 255.0;
@@ -133,12 +131,10 @@ impl Graphics {
 
     
     pub fn clear_buffer(&self, rgba: [f32; 4]) {
+        let context = &self.resources.as_ref().unwrap().context;
         unsafe {
-            self.resources
-            .as_ref()
-            .unwrap()
-            .context
-            .ClearRenderTargetView(&self.resources.as_ref().unwrap().target, &rgba[0])
+            context.ClearRenderTargetView(&self.resources.as_ref().unwrap().target, &rgba[0]);
+            context.ClearDepthStencilView(&self.resources.as_ref().unwrap().depth_stencil_view, D3D11_CLEAR_DEPTH.0, 1.0, 0);
         };
     }
         
@@ -146,41 +142,26 @@ impl Graphics {
         // self.
     }
 
-    pub fn test_triangle(&self, angle: f32, x: f32, y:f32) {
+    pub fn test_triangle(&self, angle: f32, x: f32, z:f32) {
     // pub fn test_triangle(&self, angle: f32) {
         let context = &self.resources.as_ref().unwrap().context;
 
         // Please ignore :) i hate it as much as you do... and im lazy
         let shader_path = std::env::current_exe().ok().unwrap().parent().unwrap().parent().unwrap().parent().unwrap().join("src\\window\\graphics\\shaders"); 
 
-        // Create triangle vertex's
-        // let vertices: Vec<VECTOR2> = vec![
-        //     VECTOR2 {x:0.0, y:0.5, r: 255, g: 0, b: 0, a: 255 },
-
-        //     VECTOR2 {x:0.5, y: -0.5, r: 0, g: 255, b: 0, a: 255 },
-
-        //     VECTOR2 {x: -0.5, y: -0.5, r: 0, g: 0, b: 255, a: 255 },
-
-        //     VECTOR2 {x: -0.3, y: 0.3, r: 0, g: 255, b: 0, a: 255 },
-
-        //     VECTOR2 {x: 0.3, y: 0.3, r: 0, g: 0, b: 255, a: 255 },
-
-        //     VECTOR2 {x: 0.0, y: -1.0, r: 255, g: 0, b: 0, a: 255 },
-        // ];
-
         // Create cube vertex's
         let vertices: Vec<VECTOR3> = vec![
-            VECTOR3 {x: -1.0, y: -1.0, z: -1.0,         r: 255, g: 0, b: 0, a: 0 },
-            VECTOR3 {x: 1.0, y: -1.0, z: -1.0,          r: 0, g: 255, b: 0, a: 0 },
+            VECTOR3 {x: -1.0, y: -1.0, z: -1.0},
+            VECTOR3 {x: 1.0, y: -1.0, z: -1.0 },
             
-            VECTOR3 {x: -1.0, y: 1.0, z: -1.0,          r: 0, g: 0, b: 255, a: 0 },
-            VECTOR3 {x: 1.0, y: 1.0, z: -1.0,           r: 255, g: 255, b: 0, a: 0 },
+            VECTOR3 {x: -1.0, y: 1.0, z: -1.0},
+            VECTOR3 {x: 1.0, y: 1.0, z: -1.0},
             
-            VECTOR3 {x: -1.0, y: -1.0, z: 1.0,          r: 255, g: 0, b: 255, a: 0 },
-            VECTOR3 {x: 1.0, y: -1.0, z: 1.0,           r: 0, g: 255, b: 255, a: 0 },
+            VECTOR3 {x: -1.0, y: -1.0, z: 1.0},
+            VECTOR3 {x: 1.0, y: -1.0, z: 1.0},
 
-            VECTOR3 {x: -1.0, y: 1.0, z: 1.0,           r: 0, g: 0, b: 0, a: 0 },
-            VECTOR3 {x: 1.0, y: 1.0, z: 1.0,            r: 255, g: 255, b: 255, a: 0 }, 
+            VECTOR3 {x: -1.0, y: 1.0, z: 1.0},
+            VECTOR3 {x: 1.0, y: 1.0, z: 1.0}, 
         ];
 
         // let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -343,7 +324,7 @@ impl Graphics {
                 (
                     XMMatrix(XMMatrixRotationZ(angle)) *
                     XMMatrix(XMMatrixRotationX(angle)) *
-                    XMMatrix(XMMatrixTranslation(x, y, 4.0)) *
+                    XMMatrix(XMMatrixTranslation(x, 0.0, z + 4.0)) *
                     XMMatrix(XMMatrixPerspectiveLH(1.0, 3.0/4.0, 0.5, 10.0))
                 ).0
             )
@@ -355,11 +336,8 @@ impl Graphics {
             SysMemSlicePitch: 0,
         };
 
-        let const_buff_byte_width = 16 * 4;
-        let byte_width_remainder = const_buff_byte_width % 16;
-
         let const_buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
-            ByteWidth: const_buff_byte_width + 16 - byte_width_remainder,
+            ByteWidth: std::mem::size_of_val(&vs_const_buff) as u32,
             Usage: D3D11_USAGE_DYNAMIC,
             BindFlags: D3D11_BIND_CONSTANT_BUFFER,
             CPUAccessFlags: D3D11_CPU_ACCESS_WRITE,
@@ -383,6 +361,51 @@ impl Graphics {
         });  
 
         unsafe { context.VSSetConstantBuffers(0, Some(std::slice::from_raw_parts(const_buff, 1))) }
+
+        let const_buff2: *mut Option<ID3D11Buffer> = &mut None;   
+
+        const cb2: CB2 = CB2 { 
+            face_colors: [
+                RGBA { r: 1.0, g: 0.0, b: 1.0, a: 1.0 },
+                RGBA { r: 1.0, g: 0.0, b: 0.0, a: 1.0 },
+                RGBA { r: 0.0, g: 1.0, b: 0.0, a: 1.0 },
+                RGBA { r: 0.0, g: 0.0, b: 1.0, a: 0.0 },
+                RGBA { r: 1.0, g: 1.0, b: 0.0, a: 0.0 },
+                RGBA { r: 0.0, g: 1.0, b: 1.0, a: 0.0 },
+            ]
+        };
+
+        let const_subresource_data2: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
+            pSysMem: (cb2.face_colors.as_ptr()) as *const _,
+            SysMemPitch: 0,
+            SysMemSlicePitch: 0,
+        };
+
+        let const_buff_desc2: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
+            ByteWidth: std::mem::size_of::<CB2>() as u32,
+            Usage: D3D11_USAGE_DEFAULT,
+            BindFlags: D3D11_BIND_CONSTANT_BUFFER,
+            CPUAccessFlags: D3D11_CPU_ACCESS_FLAG::default(),
+            MiscFlags: D3D11_RESOURCE_MISC_FLAG::default(),
+            StructureByteStride: 0,
+        };
+
+        unsafe {
+            &self
+                .device
+                .CreateBuffer(&const_buff_desc2, Some(&const_subresource_data2), Some(const_buff2))
+        }
+        .as_ref()
+        .unwrap_or_else(|e| {
+            errors::graphics::GraphicsError::new(
+                &e.message().to_string(),
+                Some(e.code().0),
+                loc!(),
+                Some(self),
+            )
+        });  
+
+        unsafe { context.PSSetConstantBuffers(0, Some(std::slice::from_raw_parts(const_buff2, 1))) }
 
         // Same for the pixel shaders
         let pixel_file = shader_path
@@ -442,7 +465,7 @@ impl Graphics {
         // Bind to render target
         let rendertarget = Some(Some((&self.resources.as_ref().unwrap().target).to_owned()));
         let pprendertargetviews = rendertarget.as_ref().map(core::slice::from_ref);
-        unsafe { context.OMSetRenderTargets(pprendertargetviews, None) };
+        unsafe { context.OMSetRenderTargets(pprendertargetviews, Some(&self.resources.as_ref().unwrap().depth_stencil_view)) };
 
         // Configure viewport
         let view_port: D3D11_VIEWPORT = D3D11_VIEWPORT {
@@ -472,17 +495,7 @@ impl Graphics {
             InstanceDataStepRate: 0,
         };
 
-        let col_element_desc = D3D11_INPUT_ELEMENT_DESC {
-            SemanticName: s!("Color"),
-            SemanticIndex: 0,
-            Format: DXGI_FORMAT_R8G8B8A8_UNORM,
-            InputSlot: 0,
-            AlignedByteOffset: D3D11_APPEND_ALIGNED_ELEMENT,
-            InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,
-            InstanceDataStepRate: 0,
-        };
-
-        let input_element_desc: Vec<D3D11_INPUT_ELEMENT_DESC> = vec![pos_element_desc, col_element_desc];
+        let input_element_desc: Vec<D3D11_INPUT_ELEMENT_DESC> = vec![pos_element_desc];
 
         let input_layout: Option<*mut Option<ID3D11InputLayout>> = Some(&mut None);
         unsafe {
@@ -511,8 +524,8 @@ impl Graphics {
 
     fn bind_to_window(&mut self, hwnd: &windows::Win32::Foundation::HWND) {
         let swap_chain_desc = DXGI_SWAP_CHAIN_DESC1 {
-            Width: 0,
-            Height: 0,
+            Width: self.window_width as u32,
+            Height: self.window_height as u32,
             Format: DXGI_FORMAT_R8G8B8A8_UNORM,
             SampleDesc: DXGI_SAMPLE_DESC {
                 Count: 1,
@@ -573,11 +586,88 @@ impl Graphics {
                     )
                 })
         };
+        
+        let mut ds_state: Option<ID3D11DepthStencilState> = None;
+
+        let ds_desc: D3D11_DEPTH_STENCIL_DESC = D3D11_DEPTH_STENCIL_DESC { 
+            DepthEnable: TRUE,
+            DepthWriteMask: D3D11_DEPTH_WRITE_MASK_ALL,
+            DepthFunc: D3D11_COMPARISON_LESS,
+            StencilEnable: FALSE,
+            StencilReadMask: 0,
+            StencilWriteMask: 0,
+            FrontFace: D3D11_DEPTH_STENCILOP_DESC::default(),
+            BackFace: D3D11_DEPTH_STENCILOP_DESC::default()
+        }; 
+
+        unsafe { 
+            self.device.CreateDepthStencilState(&ds_desc, Some(&mut ds_state)) 
+            .unwrap_or_else(|e| {
+                errors::graphics::GraphicsError::new(
+                    &e.message().to_string(),
+                    Some(e.code().0),
+                    loc!(),
+                    Some(self),
+                )
+            });
+
+            context.OMSetDepthStencilState(&ds_state.unwrap(), 1)
+        };
+
+
+        let mut depth_stencil: Option<ID3D11Texture2D> = None;
+        let desc_depth: D3D11_TEXTURE2D_DESC = D3D11_TEXTURE2D_DESC { 
+            Width: self.window_width as u32, 
+            Height: self.window_height as u32, 
+            MipLevels: 1, 
+            ArraySize: 1, 
+            Format: DXGI_FORMAT_D32_FLOAT, 
+            SampleDesc: DXGI_SAMPLE_DESC { Count: 1, Quality: 0 }, 
+            Usage: D3D11_USAGE_DEFAULT, 
+            BindFlags: D3D11_BIND_DEPTH_STENCIL, 
+            CPUAccessFlags: D3D11_CPU_ACCESS_FLAG::default(), 
+            MiscFlags: D3D11_RESOURCE_MISC_FLAG::default()
+        };
+
+        unsafe { 
+            self.device.CreateTexture2D(&desc_depth, None, Some(&mut depth_stencil))
+            .unwrap_or_else(|e| {
+                errors::graphics::GraphicsError::new(
+                    &e.message().to_string(),
+                    Some(e.code().0),
+                    loc!(),
+                    Some(self),
+                )
+            });
+        };
+
+        let mut depth_stencil_view: Option<ID3D11DepthStencilView> = None; 
+        let depth_stencil_view_desc: D3D11_DEPTH_STENCIL_VIEW_DESC = D3D11_DEPTH_STENCIL_VIEW_DESC { 
+            Format: DXGI_FORMAT_D32_FLOAT, 
+            ViewDimension: D3D11_DSV_DIMENSION_TEXTURE2D, 
+            Flags: 0, 
+            Anonymous: D3D11_DEPTH_STENCIL_VIEW_DESC_0 {
+                Texture2D: D3D11_TEX2D_DSV { MipSlice: 0 }
+            }
+        };
+
+        unsafe { 
+            self.device.CreateDepthStencilView(&depth_stencil.unwrap(), Some(&depth_stencil_view_desc), Some(&mut depth_stencil_view))
+            .unwrap_or_else(|e| {
+                errors::graphics::GraphicsError::new(
+                    &e.message().to_string(),
+                    Some(e.code().0),
+                    loc!(),
+                    Some(self),
+                )
+            });
+        };
 
         self.resources = Some(Resources {
             swap_chain,
             context,
             target: target.unwrap(),
+            depth_stencil_view: depth_stencil_view.unwrap()
         });
     }
 

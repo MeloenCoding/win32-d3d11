@@ -91,11 +91,12 @@ impl App<'_> {
 
     pub fn render_frame(&mut self) {
         // Test
-        let angle: f32 = 70.0;
-        // let angle: f32 = SystemTime::now().duration_since(self.start_time_buffer).unwrap().as_secs_f32();
+        // let angle: f32 = 70.0;
+        let angle: f32 = SystemTime::now().duration_since(self.start_time_buffer).unwrap().as_secs_f32();
         let mouse_pos = self.window.mouse.get_pos();
 
         self.window.graphics.clear_buffer([0.0; 4]);
+        self.window.graphics.test_triangle(70.0, 0.0, 0.0);
         self.window.graphics.test_triangle(
             angle, 
             mouse_pos.x as f32 / (self.window.width as f32 / 2.0) - 1.0, 
