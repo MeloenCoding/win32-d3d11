@@ -24,7 +24,7 @@ use windows::{
             },
             Dxgi::{
                 Common::{
-                    DXGI_ALPHA_MODE_UNSPECIFIED, DXGI_FORMAT_R32G32_FLOAT,
+                    DXGI_ALPHA_MODE_UNSPECIFIED, DXGI_FORMAT_R32G32B32_FLOAT,
                     DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC, DXGI_FORMAT_R16_UINT,
                 },
                 CreateDXGIFactory2, IDXGIFactory4, IDXGISwapChain1, DXGI_ERROR_DEVICE_REMOVED, DXGI_SCALING_STRETCH, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_EFFECT_FLIP_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT,
@@ -57,6 +57,16 @@ pub struct Resources {
 pub struct VECTOR2 {
     x: f32,
     y: f32,
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+}
+
+pub struct VECTOR3 {
+    x: f32,
+    y: f32,
+    z: f32,
     r: u8,
     g: u8,
     b: u8,
@@ -137,24 +147,40 @@ impl Graphics {
     }
 
     pub fn test_triangle(&self, angle: f32, x: f32, y:f32) {
+    // pub fn test_triangle(&self, angle: f32) {
         let context = &self.resources.as_ref().unwrap().context;
 
         // Please ignore :) i hate it as much as you do... and im lazy
         let shader_path = std::env::current_exe().ok().unwrap().parent().unwrap().parent().unwrap().parent().unwrap().join("src\\window\\graphics\\shaders"); 
 
         // Create triangle vertex's
-        let vertices: Vec<VECTOR2> = vec![
-            VECTOR2 {x:0.0, y:0.5, r: 255, g: 0, b: 0, a: 255 },
+        // let vertices: Vec<VECTOR2> = vec![
+        //     VECTOR2 {x:0.0, y:0.5, r: 255, g: 0, b: 0, a: 255 },
 
-            VECTOR2 {x:0.5, y: -0.5, r: 0, g: 255, b: 0, a: 255 },
+        //     VECTOR2 {x:0.5, y: -0.5, r: 0, g: 255, b: 0, a: 255 },
 
-            VECTOR2 {x: -0.5, y: -0.5, r: 0, g: 0, b: 255, a: 255 },
+        //     VECTOR2 {x: -0.5, y: -0.5, r: 0, g: 0, b: 255, a: 255 },
 
-            VECTOR2 {x: -0.3, y: 0.3, r: 0, g: 255, b: 0, a: 255 },
+        //     VECTOR2 {x: -0.3, y: 0.3, r: 0, g: 255, b: 0, a: 255 },
 
-            VECTOR2 {x: 0.3, y: 0.3, r: 0, g: 0, b: 255, a: 255 },
+        //     VECTOR2 {x: 0.3, y: 0.3, r: 0, g: 0, b: 255, a: 255 },
 
-            VECTOR2 {x: 0.0, y: -1.0, r: 255, g: 0, b: 0, a: 255 },
+        //     VECTOR2 {x: 0.0, y: -1.0, r: 255, g: 0, b: 0, a: 255 },
+        // ];
+
+        // Create cube vertex's
+        let vertices: Vec<VECTOR3> = vec![
+            VECTOR3 {x: -1.0, y: -1.0, z: -1.0,         r: 255, g: 0, b: 0, a: 0 },
+            VECTOR3 {x: 1.0, y: -1.0, z: -1.0,          r: 0, g: 255, b: 0, a: 0 },
+            
+            VECTOR3 {x: -1.0, y: 1.0, z: -1.0,          r: 0, g: 0, b: 255, a: 0 },
+            VECTOR3 {x: 1.0, y: 1.0, z: -1.0,           r: 255, g: 255, b: 0, a: 0 },
+            
+            VECTOR3 {x: -1.0, y: -1.0, z: 1.0,          r: 255, g: 0, b: 255, a: 0 },
+            VECTOR3 {x: 1.0, y: -1.0, z: 1.0,           r: 0, g: 255, b: 255, a: 0 },
+
+            VECTOR3 {x: -1.0, y: 1.0, z: 1.0,           r: 0, g: 0, b: 0, a: 0 },
+            VECTOR3 {x: 1.0, y: 1.0, z: 1.0,            r: 255, g: 255, b: 255, a: 0 }, 
         ];
 
         // let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
@@ -169,12 +195,12 @@ impl Graphics {
         let vertex_buff: *mut Option<ID3D11Buffer> = &mut None;
 
         let buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
-            ByteWidth: (vertices.len() * std::mem::size_of::<VECTOR2>()) as u32,
+            ByteWidth: (vertices.len() * std::mem::size_of::<VECTOR3>()) as u32,
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_VERTEX_BUFFER,
             CPUAccessFlags: D3D11_CPU_ACCESS_FLAG::default(),
             MiscFlags: D3D11_RESOURCE_MISC_FLAG::default(),
-            StructureByteStride: std::mem::size_of::<VECTOR2>() as u32,
+            StructureByteStride: std::mem::size_of::<VECTOR3>() as u32,
         };
 
         let data: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
@@ -200,21 +226,23 @@ impl Graphics {
 
         // Create index buffer
         let indices: Vec<u16> = vec![
-            0,1,2,
-            0,2,3,
-            0,4,1,
-            2,1,5,
+            0,2,1, 2,3,1,
+            1,3,5, 3,7,5,
+            2,6,3, 3,6,7,
+            4,5,7, 4,7,6,
+            0,4,2, 2,4,6,
+            0,1,4, 1,5,4
         ];
 
         let index_buffer: *mut Option<ID3D11Buffer> = &mut None;
 
         let indices_buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
-            ByteWidth: (indices.len() * std::mem::size_of::<VECTOR2>()) as u32,
+            ByteWidth: (indices.len() * std::mem::size_of::<VECTOR3>()) as u32,
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_INDEX_BUFFER,
             CPUAccessFlags: D3D11_CPU_ACCESS_FLAG::default(),
             MiscFlags: D3D11_RESOURCE_MISC_FLAG::default(),
-            StructureByteStride: std::mem::size_of::<VECTOR2>() as u32,
+            StructureByteStride: std::mem::size_of::<VECTOR3>() as u32,
         };
 
         let indices_data: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
@@ -241,7 +269,7 @@ impl Graphics {
         unsafe { context.IASetIndexBuffer((*index_buffer).as_ref().unwrap(), DXGI_FORMAT_R16_UINT, 0) };
 
         // Create VertexBuffer on the Input Assembler (IA) [see](https://learn.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-graphics-pipeline)
-        let mut stride = std::mem::size_of::<VECTOR2>() as u32;
+        let mut stride = std::mem::size_of::<VECTOR3>() as u32;
         let mut offset = 0u32;
 
         unsafe {
@@ -314,8 +342,9 @@ impl Graphics {
             XMMatrixTranspose(
                 (
                     XMMatrix(XMMatrixRotationZ(angle)) *
-                    XMMatrix(XMMatrixScaling(3.0 / 4.0, 1.0, 1.0)) * 
-                    XMMatrix(XMMatrixTranslation(x, y, 0.0))
+                    XMMatrix(XMMatrixRotationX(angle)) *
+                    XMMatrix(XMMatrixTranslation(x, y, 4.0)) *
+                    XMMatrix(XMMatrixPerspectiveLH(1.0, 3.0/4.0, 0.5, 10.0))
                 ).0
             )
         };     
@@ -436,7 +465,7 @@ impl Graphics {
         let pos_element_desc = D3D11_INPUT_ELEMENT_DESC {
             SemanticName: s!("Position"),
             SemanticIndex: 0,
-            Format: DXGI_FORMAT_R32G32_FLOAT,
+            Format: DXGI_FORMAT_R32G32B32_FLOAT, 
             InputSlot: 0,
             AlignedByteOffset: D3D11_APPEND_ALIGNED_ELEMENT,
             InputSlotClass: D3D11_INPUT_PER_VERTEX_DATA,

@@ -1,4 +1,4 @@
-use std::{time::SystemTime, array};
+use std::time::SystemTime;
 
 use windows::Win32::UI::{
     Input::KeyboardAndMouse::VK_RETURN,
@@ -91,7 +91,8 @@ impl App<'_> {
 
     pub fn render_frame(&mut self) {
         // Test
-        let angle: f32 = SystemTime::now().duration_since(self.start_time_buffer).unwrap().as_secs_f32();
+        let angle: f32 = 70.0;
+        // let angle: f32 = SystemTime::now().duration_since(self.start_time_buffer).unwrap().as_secs_f32();
         let mouse_pos = self.window.mouse.get_pos();
 
         self.window.graphics.clear_buffer([0.0; 4]);
