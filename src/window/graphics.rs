@@ -25,13 +25,15 @@ use windows::{
             Dxgi::{
                 Common::{
                     DXGI_ALPHA_MODE_UNSPECIFIED, DXGI_FORMAT_R32G32_FLOAT,
-                    DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC, DXGI_FORMAT_R32G32B32_FLOAT, DXGI_FORMAT_R16_UINT,
+                    DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_SAMPLE_DESC, DXGI_FORMAT_R16_UINT,
                 },
                 CreateDXGIFactory2, IDXGIFactory4, IDXGISwapChain1, DXGI_ERROR_DEVICE_REMOVED, DXGI_SCALING_STRETCH, DXGI_SWAP_CHAIN_DESC1, DXGI_SWAP_EFFECT_FLIP_DISCARD, DXGI_USAGE_RENDER_TARGET_OUTPUT,
             },
         },
     },
 };
+
+use directx_math::*;
 
 use crate::loc;
 
@@ -50,13 +52,6 @@ pub struct Resources {
     pub swap_chain: IDXGISwapChain1,
     pub context: ID3D11DeviceContext,
     pub target: ID3D11RenderTargetView,
-}
-
-pub struct ConstantBuffer {
-    element: Vec<Vec<f32>>
-}
-pub struct ConstantBuffer2 {
-    element: Vec<f32>
 }
 
 pub struct VECTOR2 {
@@ -141,7 +136,7 @@ impl Graphics {
         // self.
     }
 
-    pub fn test_triangle(&self, angle: f32) {
+    pub fn test_triangle(&self, angle: f32, x: f32, y:f32) {
         let context = &self.resources.as_ref().unwrap().context;
 
         // Please ignore :) i hate it as much as you do... and im lazy
@@ -314,16 +309,19 @@ impl Graphics {
         unsafe { context.VSSetShader(&vertex_shader.unwrap(), None) };
         
         let const_buff: *mut Option<ID3D11Buffer> = &mut None;
-        const VIEWPORT_NORMALIZER: f32 = 3.0 / 4.0;
-        let vs_const_buff3 = vec![
-            VIEWPORT_NORMALIZER * f32::cos(angle),   f32::sin(angle),    0.0, 0.0,
-            VIEWPORT_NORMALIZER * -f32::sin(angle),  f32::cos(angle),    0.0, 0.0,
-            0.0,               0.0,                1.0, 0.0,
-            0.0,               0.0,                0.0, 1.0
-        ];
         
+        let vs_const_buff = {
+            XMMatrixTranspose(
+                (
+                    XMMatrix(XMMatrixRotationZ(angle)) *
+                    XMMatrix(XMMatrixScaling(3.0 / 4.0, 1.0, 1.0)) * 
+                    XMMatrix(XMMatrixTranslation(x, y, 0.0))
+                ).0
+            )
+        };     
+
         let const_subresource_data: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
-            pSysMem: vs_const_buff3.as_ptr() as *const _,
+            pSysMem: unsafe { vs_const_buff.r.as_ptr() } as *const _,
             SysMemPitch: 0,
             SysMemSlicePitch: 0,
         };

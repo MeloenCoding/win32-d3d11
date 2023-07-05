@@ -5,7 +5,7 @@ mod window;
 
 fn main() {
     // create an app
-    let mut app: App = app::App::create();
+    let mut app: App = app::App::create(1000, 750);
 
     // launch the app
     app.launch();

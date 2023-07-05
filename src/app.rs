@@ -25,10 +25,10 @@ struct Fps {
 }
 
 impl App<'_> {
-    pub fn create() -> App<'static> {
+    pub fn create(width: i16, height: i16) -> App<'static> {
         let debug = true;
         let app = App {
-            window: Window::new("Example App", CS_OWNDC, 1000, 750, debug),
+            window: Window::new("Example App", CS_OWNDC, width, height, debug),
             input_buffer: String::new(),
             time_buffer: SystemTime::now(),
             start_time_buffer: SystemTime::now(),
@@ -49,6 +49,9 @@ impl App<'_> {
         let mut exit_code: Option<usize>;
         // unsafe { windows::Win32::System::Performance::QueryPerformanceCounter(&mut self.perf_counter) };
         self.time_buffer = SystemTime::now();
+
+        println!("{:#?}", self.window.width);
+        println!("{:#?}", self.window.height);
 
         loop {
             exit_code = self.window.handle_messages();
@@ -89,9 +92,14 @@ impl App<'_> {
     pub fn render_frame(&mut self) {
         // Test
         let angle: f32 = SystemTime::now().duration_since(self.start_time_buffer).unwrap().as_secs_f32();
+        let mouse_pos = self.window.mouse.get_pos();
 
         self.window.graphics.clear_buffer([0.0; 4]);
-        self.window.graphics.test_triangle(angle);
+        self.window.graphics.test_triangle(
+            angle, 
+            mouse_pos.x as f32 / (self.window.width as f32 / 2.0) - 1.0, 
+            -(mouse_pos.y as f32 / (self.window.height as f32 / 2.0) - 1.0)
+        );
 
         // App logic
         if let Some(ch) = self.window.keyboard.read_char() {
@@ -127,7 +135,7 @@ impl App<'_> {
             self.fps.low = cur;
         }
 
-        println!("fps: {cur}");
+        // println!("fps: {cur}");
 
         self.fps.total += cur;
         self.clock_count += 1;
