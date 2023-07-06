@@ -14,7 +14,7 @@ pub struct CallLocation {
 #[macro_export]
 macro_rules! loc {
     () => {
-        crate::window::errors::CallLocation {
+        $crate::window::errors::CallLocation {
             file: file!().to_string(),
             line: line!(),
             column: column!(),

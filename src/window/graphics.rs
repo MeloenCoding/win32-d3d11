@@ -38,6 +38,9 @@ use crate::loc;
 
 use super::errors::{self, dx_info_module::Manager, FatalErrorBase};
 
+pub mod bindable;
+
+
 pub struct Graphics {
     pub dx_info_manager: Option<crate::window::errors::dx_info_module::Manager>,
     pub resources: Option<Resources>,
@@ -54,7 +57,7 @@ pub struct Resources {
     pub depth_stencil_view: ID3D11DepthStencilView
 }
 
-pub struct VECTOR3 {
+pub struct FLOAT3 {
     x: f32,
     y: f32,
     z: f32,
@@ -81,11 +84,12 @@ impl Graphics {
         window_width: i16,
     ) -> Graphics {
         let (dxgi_factory, device) = Graphics::create_device();
-        let mut dx_info_manager = None;
+        let mut dx_info_manager: Option<Manager> = None;
 
         if debug {
             dx_info_manager = Some(Manager::new());
         }
+        bindable::vertexbuffer::VertexBuffer::new();
 
         let mut graphics = Graphics {
             dxgi_factory,
@@ -139,8 +143,9 @@ impl Graphics {
     }
         
     pub fn draw_sample_text(&self) {
-        // self.
+        // self.a
     }
+
 
     pub fn test_triangle(&self, angle: f32, x: f32, z:f32) {
     // pub fn test_triangle(&self, angle: f32) {
@@ -150,19 +155,21 @@ impl Graphics {
         let shader_path = std::env::current_exe().ok().unwrap().parent().unwrap().parent().unwrap().parent().unwrap().join("src\\window\\graphics\\shaders"); 
 
         // Create cube vertex's
-        let vertices: Vec<VECTOR3> = vec![
-            VECTOR3 {x: -1.0, y: -1.0, z: -1.0},
-            VECTOR3 {x: 1.0, y: -1.0, z: -1.0 },
+        let vertices: Vec<FLOAT3> = vec![
+            FLOAT3 {x: -1.0, y: -1.0, z: -1.0},
+            FLOAT3 {x: 1.0, y: -1.0, z: -1.0 },
             
-            VECTOR3 {x: -1.0, y: 1.0, z: -1.0},
-            VECTOR3 {x: 1.0, y: 1.0, z: -1.0},
+            FLOAT3 {x: -1.0, y: 1.0, z: -1.0},
+            FLOAT3 {x: 1.0, y: 1.0, z: -1.0},
             
-            VECTOR3 {x: -1.0, y: -1.0, z: 1.0},
-            VECTOR3 {x: 1.0, y: -1.0, z: 1.0},
+            FLOAT3 {x: -1.0, y: -1.0, z: 1.0},
+            FLOAT3 {x: 1.0, y: -1.0, z: 1.0},
 
-            VECTOR3 {x: -1.0, y: 1.0, z: 1.0},
-            VECTOR3 {x: 1.0, y: 1.0, z: 1.0}, 
+            FLOAT3 {x: -1.0, y: 1.0, z: 1.0},
+            FLOAT3 {x: 1.0, y: 1.0, z: 1.0}, 
         ];
+
+        
 
         // let compile_flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
         let compile_flags = if cfg!(debug_assertions) {
@@ -172,16 +179,18 @@ impl Graphics {
             0
         };
 
+        let vertex = bindable::vertexbuffer::VertexBuffer::new();
+
         // Create a vertex buffer
         let vertex_buff: *mut Option<ID3D11Buffer> = &mut None;
 
         let buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
-            ByteWidth: (vertices.len() * std::mem::size_of::<VECTOR3>()) as u32,
+            ByteWidth: (vertices.len() * std::mem::size_of::<FLOAT3>()) as u32,
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_VERTEX_BUFFER,
             CPUAccessFlags: D3D11_CPU_ACCESS_FLAG::default(),
             MiscFlags: D3D11_RESOURCE_MISC_FLAG::default(),
-            StructureByteStride: std::mem::size_of::<VECTOR3>() as u32,
+            StructureByteStride: std::mem::size_of::<FLOAT3>() as u32,
         };
 
         let data: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
@@ -218,12 +227,12 @@ impl Graphics {
         let index_buffer: *mut Option<ID3D11Buffer> = &mut None;
 
         let indices_buff_desc: D3D11_BUFFER_DESC = D3D11_BUFFER_DESC {
-            ByteWidth: (indices.len() * std::mem::size_of::<VECTOR3>()) as u32,
+            ByteWidth: (indices.len() * std::mem::size_of::<FLOAT3>()) as u32,
             Usage: D3D11_USAGE_DEFAULT,
             BindFlags: D3D11_BIND_INDEX_BUFFER,
             CPUAccessFlags: D3D11_CPU_ACCESS_FLAG::default(),
             MiscFlags: D3D11_RESOURCE_MISC_FLAG::default(),
-            StructureByteStride: std::mem::size_of::<VECTOR3>() as u32,
+            StructureByteStride: std::mem::size_of::<FLOAT3>() as u32,
         };
 
         let indices_data: D3D11_SUBRESOURCE_DATA = D3D11_SUBRESOURCE_DATA {
@@ -250,7 +259,7 @@ impl Graphics {
         unsafe { context.IASetIndexBuffer((*index_buffer).as_ref().unwrap(), DXGI_FORMAT_R16_UINT, 0) };
 
         // Create VertexBuffer on the Input Assembler (IA) [see](https://learn.microsoft.com/en-us/windows/win32/direct3d11/overviews-direct3d-11-graphics-pipeline)
-        let mut stride = std::mem::size_of::<VECTOR3>() as u32;
+        let mut stride = std::mem::size_of::<FLOAT3>() as u32;
         let mut offset = 0u32;
 
         unsafe {
