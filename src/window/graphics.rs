@@ -89,7 +89,7 @@ impl Graphics {
         if debug {
             dx_info_manager = Some(Manager::new());
         }
-        bindable::vertexbuffer::VertexBuffer::new();
+        // bindable::vertexbuffer::VertexBuffer::new();
 
         let mut graphics = Graphics {
             dxgi_factory,
@@ -179,7 +179,7 @@ impl Graphics {
             0
         };
 
-        let vertex = bindable::vertexbuffer::VertexBuffer::new();
+        // let vertex = bindable::vertexbuffer::VertexBuffer::new();
 
         // Create a vertex buffer
         let vertex_buff: *mut Option<ID3D11Buffer> = &mut None;

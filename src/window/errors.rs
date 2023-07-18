@@ -55,7 +55,7 @@ pub trait FatalErrorBase {
                 })
                 .get_messages()
             {
-                println!("{:#?}", msg);
+                println!("{}", msg);
             }
         }
 

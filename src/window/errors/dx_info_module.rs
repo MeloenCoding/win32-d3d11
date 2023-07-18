@@ -51,6 +51,11 @@ impl Manager {
                     })
             };
 
+            // between these two 'GetMessage()' calls you have to use message_length or else 
+            // your error description will be complete fucking garbage
+            
+            messages.insert(messages.len(), format!("[MSG_LEN] {}", message_length));     
+
             unsafe {
                 self.info_queue
                     .GetMessage(
@@ -68,54 +73,52 @@ impl Manager {
                     })
             };
 
-            if !messages.contains(&format!("[MSG_ID] {}", info_msg_buffer.ID)) {
-                messages.insert(messages.len(), format!("[MSG_ID] {}", info_msg_buffer.ID));
-                messages.insert(messages.len(), format!("[MSG_ID_INFO] {}", Self::d3d11_message_id_to_info(info_msg_buffer.ID)));
+            messages.insert(messages.len(), format!("[MSG_ID] {}", info_msg_buffer.ID));
+            messages.insert(messages.len(), format!("[MSG_ID_INFO] {}", Self::d3d11_message_id_to_info(info_msg_buffer.ID)));
+            messages.insert(
+                messages.len(),
+                format!(
+                    "[CATEGORY_ID] {}",
+                    message::dx_category_id_to_str(info_msg_buffer.Category)
+                        .unwrap_or(info_msg_buffer.Category.0.to_string())
+                ),
+            );
+
+            if message_length > 0 {
+                let char_vec = unsafe {
+                    std::slice::from_raw_parts(
+                        info_msg_buffer.pDescription,
+                        info_msg_buffer.DescriptionByteLength,
+                    )
+                };
+
                 messages.insert(
                     messages.len(),
                     format!(
-                        "[CATEGORY_ID] {}",
-                        message::dx_category_id_to_str(info_msg_buffer.Category)
-                            .unwrap_or(info_msg_buffer.Category.0.to_string())
+                        "[SEVERITY] {}",
+                        message::dx_severity_id_to_str(info_msg_buffer.Severity)
+                            .unwrap_or(info_msg_buffer.Severity.0.to_string())
                     ),
                 );
 
-                if message_length > 0 {
-                    let char_vec = unsafe {
-                        std::slice::from_raw_parts(
-                            info_msg_buffer.pDescription,
+                messages.insert(
+                    messages.len(),
+                    format!(
+                        "[DESCRIPTION]\n{}",
+                        &String::from_utf8(char_vec.to_vec()).unwrap_or(format!(
+                            "Message found but is corrupted [msglength: {}]\n{}",
                             info_msg_buffer.DescriptionByteLength,
-                        )
-                    };
-
-                    messages.insert(
-                        messages.len(),
-                        format!(
-                            "[SEVERITY] {}",
-                            message::dx_severity_id_to_str(info_msg_buffer.Severity)
-                                .unwrap_or(info_msg_buffer.Severity.0.to_string())
-                        ),
-                    );
-
-                    messages.insert(
-                        messages.len(),
-                        format!(
-                            "[DESCRIPTION]\n{}",
-                            &String::from_utf8(char_vec.to_vec()).unwrap_or(format!(
-                                "Message found but is corrupted [msglength: {}]\n{}",
-                                info_msg_buffer.DescriptionByteLength,
-                                String::from_utf8_lossy(char_vec)
-                            ))
-                        ),
-                    );
-                } else {
-                    messages.insert(
-                        messages.len(),
-                        "[DESCRIPTION] No message was found".to_string(),
-                    );
-                }
-                messages.insert(messages.len(), "\n".to_string());
+                            String::from_utf8_lossy(char_vec)
+                        ))
+                    ),
+                );
+            } else {
+                messages.insert(
+                    messages.len(),
+                    "[DESCRIPTION] No message was found".to_string(),
+                );
             }
+            messages.insert(messages.len(), "\n".to_string());
         }
         return messages;
     }

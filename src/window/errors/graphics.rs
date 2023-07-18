@@ -57,6 +57,7 @@ pub fn dx_get_error_description(hr: HRESULT, fallback_desc: &str) -> String {
                 For more info see: https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-formatmessage
             */
             windows::Win32::System::Diagnostics::Debug::FORMAT_MESSAGE_FROM_SYSTEM | // Use system message tables to retrieve error text
+            windows::Win32::System::Diagnostics::Debug::FORMAT_MESSAGE_IGNORE_INSERTS |
             windows::Win32::System::Diagnostics::Debug::FORMAT_MESSAGE_ALLOCATE_BUFFER, // Allocate buffer on local heap for error text
             None, // Location of the message definition. We use the systems error table so it has to be None
             hr.0.try_into().unwrap(), // The Errorcode you want a description about

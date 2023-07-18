@@ -82,7 +82,7 @@ impl App<'_> {
                 .unwrap()
                 .get_messages()
             {
-                println!("{:?}", msg);
+                println!("{}", msg);
             }
         }
 
